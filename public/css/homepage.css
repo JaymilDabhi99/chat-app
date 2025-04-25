@@ -1,0 +1,41 @@
+#main {
+    margin-top: 30px;
+    margin-left: 20rem;
+    padding: 0.2rem;
+    width: 50%;
+    height: 20rem;
+    background-color: black;
+    border-radius: 20px;
+    text-align: center;
+}
+h1 {
+    color: white;
+    /* text-align: center; */
+    margin-top: 2rem;
+}
+h4 {
+    color: white;
+    /* text-align: center; */
+    margin-top: 1rem;
+}
+
+#btn {
+    display: block;
+    margin-top: -32px;
+    margin-left: 33rem;
+    padding: 0.5rem 1rem;
+    background-color: #333;
+    background-color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#username-input {
+    width: 70%;
+    padding: 0.5rem;
+    margin-top: 1rem;
+    margin-right: 4rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
