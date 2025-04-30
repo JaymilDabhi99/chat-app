@@ -1,17 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat App</title>
     <link rel="stylesheet" href="./css/chat.css">
 </head>
+
 <body>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-        <input id="input" placeholder="Type Your Messages..." autocomplete="off" />
-        <button>Send</button>
-    </form>
+    <div class="container1">
+        <div class="msgDiv">
+            <ul id="messages"></ul>
+        </div>
+        <form id="form" action="">
+            <input id="input" placeholder="Type Your Messages..." autocomplete="off" />
+            <button>Send</button>
+        </form>
+    </div>
+    <div class="container2">
+
+    </div>
+    <div class="container3">
+
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -23,26 +36,50 @@
         const username = localStorage.getItem('username');
         // console.log(username);
 
+        socket.on("connect", (socket) => {
+            console.log(`${localStorage.getItem('username')}`);
+        })
+
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            if(input.value) {
+            if (input.value) {
                 const timestamp = new Date().toLocaleTimeString();
-                socket.emit('chat message', {message: input.value,timestamp, username});
+                socket.emit('chat message', { message: input.value, timestamp, username });
                 input.value = '';
             }
         });
 
         socket.on('chat message', (msg) => {
             // console.log(msg);
-            const item = document.createElement('li');
-            item.textContent = msg.username + ": " + msg.message + " " + msg.timestamp;
-            messages.appendChild(item);
+            const item = document.createElement('div');
+            const message = document.createElement('p');
+            const timeSpan = document.createElement('span');
+
+            item.textContent = msg.username + ": " + msg.message;
+            timeSpan.textContent = msg.timestamp;
+
             window.scrollTo(0, document.body.scrollHeight);
+
+            item.style.backgroundColor = "lightblue";
+            item.style.width = "100%";
+            item.style.padding = "15px";
+            item.style.margin = "2px";
+            item.style.borderRadius = "10px";
+            message.style.margin = "auto";
+            timeSpan.style.fontSize = "15px";
+
+            item.appendChild(message);
+            item.appendChild(timeSpan);
+            messages.appendChild(item);
         });
 
-        socket.on("connect", (socket) => {
-            console.log(`${localStorage.getItem('username')}`);
+
+        const msgInput = document.querySelector('#input');
+        msgInput.addEventListener('focus', () => {
+            socket.input('user input', { username, typing: true });
         })
+
+
 
         socket.on("disconnect", () => {
             localStorage.clear();
@@ -50,4 +87,5 @@
 
     </script>
 </body>
+
 </html>
