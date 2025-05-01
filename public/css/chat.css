@@ -17,20 +17,22 @@ body {
     margin-left: 17rem;
     border: 2px solid #333;
     border-radius: 10px;
+    overflow-y: auto;
+
 }
 
 #form {
     display: flex;
-    margin-top: 24rem;
+    margin-left: -3rem;
     width: 100%;
     align-items: center;
     justify-content: center;
-
+    /* position: relative; */
 }
 
 #input {
     padding: 10px;
-    width: 70%;
+    width: 40%;
     border-radius: 5px;
     border: 1px solid #333;
     /* margin-right: 22rem; */
@@ -51,9 +53,7 @@ body {
     color: #fff;
 }
 
-/* .msgDiv {
-    background-color: #fff;
-} */
+.msgDiv {}
 
 #messages {
     width: 25rem;
@@ -62,6 +62,31 @@ body {
     padding: 10px;
     margin-left: 10rem;
     border-radius: 5px;
+
+}
+
+.indicator-p {
+    margin-top: 20px;
+}
+
+.container2 {
+    background-color: rgb(212, 212, 212);
+    width: 15%;
+    height: 8rem;
+    margin-top: -33rem;
+    margin-left: 58rem;
+    border-radius: 2px;
+    border: 1px solid #333;
+}
+
+.container3 {
+    background-color: rgb(212, 212, 212);
+    width: 15%;
+    height: 20rem;
+    margin-top: 1rem;
+    margin-left: 58rem;
+    border-radius: 2px;
+    border: 1px solid #333;
 }
 
 /* #messages>li {

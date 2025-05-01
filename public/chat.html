@@ -10,14 +10,15 @@
 
 <body>
     <div class="container1">
-        <div class="msgDiv">
-            <ul id="messages"></ul>
-        </div>
-        <form id="form" action="">
-            <input id="input" placeholder="Type Your Messages..." autocomplete="off" />
-            <button>Send</button>
-        </form>
+        <div id="messages"></div>
     </div>
+    <form id="form" action="">
+        <div class="input-indicator">
+            <p class="indicator-p"></p>
+        </div>
+        <input id="input" placeholder="Type Your Messages..." autocomplete="off" />
+        <button>Send</button>
+    </form>
     <div class="container2">
 
     </div>
@@ -29,16 +30,29 @@
     <script>
         const socket = io();
 
+        const container1 = document.getElementsByClassName('container1');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
         const messages = document.getElementById('messages');
+        const container2 = document.getElementsByClassName('container2');
+        const container3 = document.getElementsByClassName('container3');
+
+        // container1.style.overflowY = "scroll";
 
         const username = localStorage.getItem('username');
+        // if (!username) {
+        //     window.location.href = '/';
+        // } else {
+        //     container2[0].textContent = `username: ${username}`;
+        // }
         // console.log(username);
 
         socket.on("connect", (socket) => {
             console.log(`${localStorage.getItem('username')}`);
+            container2[0].textContent = `Username: ${username}`;
+            container3.textContent = `Socket ID: ${socket.id}`;
         })
+
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -58,15 +72,20 @@
             item.textContent = msg.username + ": " + msg.message;
             timeSpan.textContent = msg.timestamp;
 
-            window.scrollTo(0, document.body.scrollHeight);
 
-            item.style.backgroundColor = "lightblue";
-            item.style.width = "100%";
-            item.style.padding = "15px";
-            item.style.margin = "2px";
+
+            item.style.backgroundColor = "#fff";
+            item.style.width = "35rem";
+            item.style.padding = "12px";
+            item.style.textAlign = "right";
+            item.style.marginLeft = "-9rem";
+            item.style.marginTop = "3px";
             item.style.borderRadius = "10px";
-            message.style.margin = "auto";
-            timeSpan.style.fontSize = "15px";
+            message.style.marginTop = "-17px";
+            message.style.marginLeft = "10px";
+
+            timeSpan.style.fontSize = "10px";
+            // timeSpan.style.marginLeft = "30rem";
 
             item.appendChild(message);
             item.appendChild(timeSpan);
@@ -74,11 +93,25 @@
         });
 
 
+        // typing indicator
         const msgInput = document.querySelector('#input');
+
         msgInput.addEventListener('focus', () => {
-            socket.input('user input', { username, typing: true });
+            socket.emit('typing', { username, typing: true });
+        })
+        msgInput.addEventListener('blur', () => {
+            socket.emit('typing', { username, typing: false });
         })
 
+        socket.on('typing_status', (data) => {
+            const { username: typingUsername, typing } = data;
+            const p = document.querySelector('.indicator-p');
+            if (typing && typingUsername !== username) {
+                p.innerText = `${typingUsername} is typing...`;
+            } else {
+                p.innerText = '';
+            }
+        })
 
 
         socket.on("disconnect", () => {

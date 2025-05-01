@@ -4,15 +4,16 @@ const initializeSocket = (server) => {
   const io = socket(server, {
     cors: {},
   });
-  const users = {};
+  const onlineUsers = {};
 
   io.on("connection", (socket) => {
     // console.log(`a user connected: ${users}: ${socket.id}`);
 
     // Handle events
-    socket.on("setUsername", (username) => {
-      users[socket.id] = username;
-      socket.broadcast.emit("notification", `${username} has joined the chat`);
+    socket.on("connect", (socket) => {
+      onlineUsers[userId] = socket.id;
+      socket.broadcast.emit("notification", `${userId} has joined the chat`);
+      io.emit('userOnline', {userId, status: 'online' });
     });
 
     socket.on("chat message", (msg) => {
@@ -20,12 +21,17 @@ const initializeSocket = (server) => {
       io.emit("chat message", msg);
     });
 
+    socket.on("typing", (data) => {
+      socket.broadcast.emit('typing_status', data);
+    })
+
     socket.on("disconnect", () => {
-      if (users[socket.id]) {
-        localStorage.removeItem(users[socket.id]);
-      }
-      // console.log("user disconnected");
-      delete users[socket.id];
+      for(let userId in onlineUsers){
+        if(onlineUsers[userId] === socket.id){
+            delete onlineUsers[userId];
+            io.emit('userOffline',{userId, status: 'offline'});
+        }
+    }
     });
   });
 };
