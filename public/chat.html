@@ -9,12 +9,16 @@
 </head>
 
 <body>
+    <div id="notification">
+        <p class="notification-p"></p>
+    </div>
     <div class="container1">
         <div id="messages"></div>
+
     </div>
     <form id="form" action="">
-        <div class="input-indicator">
-            <p class="indicator-p"></p>
+        <div class="inputIndicator">
+            <p class="indicator"></p>
         </div>
         <input id="input" placeholder="Type Your Messages..." autocomplete="off" />
         <button>Send</button>
@@ -23,8 +27,9 @@
 
     </div>
     <div class="container3">
-
+        <ul id="userList"></ul>
     </div>
+
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -36,6 +41,7 @@
         const messages = document.getElementById('messages');
         const container2 = document.getElementsByClassName('container2');
         const container3 = document.getElementsByClassName('container3');
+        const notification = document.getElementsByClassName('notification');
 
         // container1.style.overflowY = "scroll";
 
@@ -50,9 +56,10 @@
         socket.on("connect", (socket) => {
             console.log(`${localStorage.getItem('username')}`);
             container2[0].textContent = `Username: ${username}`;
-            container3.textContent = `Socket ID: ${socket.id}`;
         })
 
+        // console.log("username: ", username);
+        socket.emit('new-user', username);
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -79,7 +86,7 @@
             item.style.padding = "12px";
             item.style.textAlign = "right";
             item.style.marginLeft = "-9rem";
-            item.style.marginTop = "3px";
+            item.style.marginTop = "2px";
             item.style.borderRadius = "10px";
             message.style.marginTop = "-17px";
             message.style.marginLeft = "10px";
@@ -91,6 +98,21 @@
             item.appendChild(timeSpan);
             messages.appendChild(item);
         });
+
+        // online users
+        socket.on('userOnline', (data) => {
+            const ul = document.getElementById('userList');
+            ul.innerHTML = '';
+            // console.log("data: ", data);
+            data.forEach(user => {
+                const li = document.createElement('li');
+                li.textContent = `
+                 ${user.username}`;
+                ul.appendChild(li);
+            })
+            // console.log("data: ", data);
+            // console.log("userList: ", ul);
+        })
 
 
         // typing indicator
@@ -105,7 +127,7 @@
 
         socket.on('typing_status', (data) => {
             const { username: typingUsername, typing } = data;
-            const p = document.querySelector('.indicator-p');
+            const p = document.querySelector('.indicator');
             if (typing && typingUsername !== username) {
                 p.innerText = `${typingUsername} is typing...`;
             } else {
@@ -113,6 +135,28 @@
             }
         })
 
+
+        // notification
+        socket.on('user-join', (username) => {
+            showNotification(`${username} has joined the chat`);
+            console.log("user-join: ", username);
+        });
+
+        socket.on('user-left', (username) => {
+            showNotification(`${username} has left the chat`);
+        });
+
+        function showNotification(text) {
+            const div = document.querySelector('.notification-p');
+            // div.classList = `notification ${type}`;
+            div.textContent = text;
+            if (typing === true && input.value && !username) {
+                div.textContent = '';
+            }
+            document.getElementById('notification').appendChild(div);
+
+            div.style.marginLeft = "4rem";
+        }
 
         socket.on("disconnect", () => {
             localStorage.clear();

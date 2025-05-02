@@ -1,5 +1,4 @@
 const express = require("express");
-const moment = require("moment");
 const { createServer } = require("http");
 const { join } = require("path");
 const { Server } = require("socket.io");
@@ -13,7 +12,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server);
 
-const dbname = connectDB();
+connectDB();
 
 app.use(express.static(join(__dirname, "/public")));
 

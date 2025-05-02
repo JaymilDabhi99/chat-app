@@ -65,8 +65,18 @@ body {
 
 }
 
-.indicator-p {
+.indicator {
     margin-top: 20px;
+}
+
+/* .notification {
+    font-style: italic;
+    margin-top: 5px;
+} */
+
+.notification-p {
+    margin-left: 31rem;
+    /* margin-bottom: -4rem; */
 }
 
 .container2 {
@@ -77,6 +87,7 @@ body {
     margin-left: 58rem;
     border-radius: 2px;
     border: 1px solid #333;
+    padding: 10px;
 }
 
 .container3 {

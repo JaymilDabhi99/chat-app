@@ -2,18 +2,24 @@ const socket = require("socket.io");
 
 const initializeSocket = (server) => {
   const io = socket(server, {
-    cors: {},
+    cors: {origin: "*",
+      methods: ['GET', 'POST']
+    },
   });
-  const onlineUsers = {};
+  let onlineUsers = [];
 
   io.on("connection", (socket) => {
-    // console.log(`a user connected: ${users}: ${socket.id}`);
+    console.log('a user connected:', socket.id);
 
     // Handle events
-    socket.on("connect", (socket) => {
-      onlineUsers[userId] = socket.id;
-      socket.broadcast.emit("notification", `${userId} has joined the chat`);
-      io.emit('userOnline', {userId, status: 'online' });
+    socket.on("new-user", (username) => {
+      onlineUsers[socket.id] = username;
+      // console.log("username: ", username);
+      console.log(`${username} connected with id: ${socket.id}`);
+      io.emit('userOnline', formatUsers(onlineUsers));
+
+      socket.broadcast.emit("user-join", username);
+      
     });
 
     socket.on("chat message", (msg) => {
@@ -26,14 +32,22 @@ const initializeSocket = (server) => {
     })
 
     socket.on("disconnect", () => {
-      for(let userId in onlineUsers){
-        if(onlineUsers[userId] === socket.id){
-            delete onlineUsers[userId];
-            io.emit('userOffline',{userId, status: 'offline'});
-        }
-    }
+       const username = onlineUsers[socket.id];
+       console.log(`${username} disconnected ${socket.id}`);
+
+       socket.broadcast.emit('user-left', username);
+
+       delete onlineUsers[socket.id];
+       io.emit('userOnline', formatUsers(onlineUsers));
     });
   });
+
+  function formatUsers(obj){
+    const formattedUsers = Object.entries(obj).map(([socketId, username]) => {
+      return ({ userId: socketId, username });
+    });
+    return formattedUsers;
+  }
 };
 
 module.exports = initializeSocket;
