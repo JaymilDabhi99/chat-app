@@ -2,167 +2,35 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat App</title>
-    <link rel="stylesheet" href="./css/chat.css">
+    <link rel="stylesheet" href="./css/chat.css" />
 </head>
 
 <body>
-    <div id="notification">
-        <p class="notification-p"></p>
-    </div>
     <div class="container1">
         <div id="messages"></div>
-
+        <div id="notification">
+            <p class="notification-p"></p>
+        </div>
     </div>
-    <form id="form" action="">
+
+    <form id="form">
         <div class="inputIndicator">
             <p class="indicator"></p>
         </div>
-        <input id="input" placeholder="Type Your Messages..." autocomplete="off" />
-        <button>Send</button>
+        <input id="input" placeholder="Type Your Message..." autocomplete="off" />
+        <button type="submit">Send</button>
     </form>
-    <div class="container2">
 
-    </div>
+    <div class="container2"></div>
     <div class="container3">
         <ul id="userList"></ul>
     </div>
 
-
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-
-        const container1 = document.getElementsByClassName('container1');
-        const form = document.getElementById('form');
-        const input = document.getElementById('input');
-        const messages = document.getElementById('messages');
-        const container2 = document.getElementsByClassName('container2');
-        const container3 = document.getElementsByClassName('container3');
-        const notification = document.getElementsByClassName('notification');
-
-        // container1.style.overflowY = "scroll";
-
-        const username = localStorage.getItem('username');
-        // if (!username) {
-        //     window.location.href = '/';
-        // } else {
-        //     container2[0].textContent = `username: ${username}`;
-        // }
-        // console.log(username);
-
-        socket.on("connect", (socket) => {
-            console.log(`${localStorage.getItem('username')}`);
-            container2[0].textContent = `Username: ${username}`;
-        })
-
-        // console.log("username: ", username);
-        socket.emit('new-user', username);
-
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (input.value) {
-                const timestamp = new Date().toLocaleTimeString();
-                socket.emit('chat message', { message: input.value, timestamp, username });
-                input.value = '';
-            }
-        });
-
-        socket.on('chat message', (msg) => {
-            // console.log(msg);
-            const item = document.createElement('div');
-            const message = document.createElement('p');
-            const timeSpan = document.createElement('span');
-
-            item.textContent = msg.username + ": " + msg.message;
-            timeSpan.textContent = msg.timestamp;
-
-
-
-            item.style.backgroundColor = "#fff";
-            item.style.width = "35rem";
-            item.style.padding = "12px";
-            item.style.textAlign = "right";
-            item.style.marginLeft = "-9rem";
-            item.style.marginTop = "2px";
-            item.style.borderRadius = "10px";
-            message.style.marginTop = "-17px";
-            message.style.marginLeft = "10px";
-
-            timeSpan.style.fontSize = "10px";
-            // timeSpan.style.marginLeft = "30rem";
-
-            item.appendChild(message);
-            item.appendChild(timeSpan);
-            messages.appendChild(item);
-        });
-
-        // online users
-        socket.on('userOnline', (data) => {
-            const ul = document.getElementById('userList');
-            ul.innerHTML = '';
-            // console.log("data: ", data);
-            data.forEach(user => {
-                const li = document.createElement('li');
-                li.textContent = `
-                 ${user.username}`;
-                ul.appendChild(li);
-            })
-            // console.log("data: ", data);
-            // console.log("userList: ", ul);
-        })
-
-
-        // typing indicator
-        const msgInput = document.querySelector('#input');
-
-        msgInput.addEventListener('focus', () => {
-            socket.emit('typing', { username, typing: true });
-        })
-        msgInput.addEventListener('blur', () => {
-            socket.emit('typing', { username, typing: false });
-        })
-
-        socket.on('typing_status', (data) => {
-            const { username: typingUsername, typing } = data;
-            const p = document.querySelector('.indicator');
-            if (typing && typingUsername !== username) {
-                p.innerText = `${typingUsername} is typing...`;
-            } else {
-                p.innerText = '';
-            }
-        })
-
-
-        // notification
-        socket.on('user-join', (username) => {
-            showNotification(`${username} has joined the chat`);
-            console.log("user-join: ", username);
-        });
-
-        socket.on('user-left', (username) => {
-            showNotification(`${username} has left the chat`);
-        });
-
-        function showNotification(text) {
-            const div = document.querySelector('.notification-p');
-            // div.classList = `notification ${type}`;
-            div.textContent = text;
-            if (typing === true && input.value && !username) {
-                div.textContent = '';
-            }
-            document.getElementById('notification').appendChild(div);
-
-            div.style.marginLeft = "4rem";
-        }
-
-        socket.on("disconnect", () => {
-            localStorage.clear();
-        });
-
-    </script>
+    <script src="./js/chat.js"></script>
 </body>
 
 </html>

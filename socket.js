@@ -2,52 +2,54 @@ const socket = require("socket.io");
 
 const initializeSocket = (server) => {
   const io = socket(server, {
-    cors: {origin: "*",
+    cors: {
+      origin: "*",
       methods: ['GET', 'POST']
     },
   });
-  let onlineUsers = [];
+
+  let onlineUsers = {};
 
   io.on("connection", (socket) => {
-    console.log('a user connected:', socket.id);
+    console.log('User connected:', socket.id);
 
-    // Handle events
     socket.on("new-user", (username) => {
-      onlineUsers[socket.id] = username;
-      // console.log("username: ", username);
       console.log(`${username} connected with id: ${socket.id}`);
-      io.emit('userOnline', formatUsers(onlineUsers));
+      onlineUsers[socket.id] = username;
 
       socket.broadcast.emit("user-join", username);
-      
+
+      socket.broadcast.emit("userOnline", { userOnline: onlineUsers });
+      const filteredUsers = {};
+      for (let id in onlineUsers) {
+        if (id !== socket.id) {
+          filteredUsers[id] = onlineUsers[id];
+        }
+      }
+
+        socket.emit('userOnline', {userOnline: filteredUsers});
     });
 
     socket.on("chat message", (msg) => {
-      // console.log("message: " + msg);
       io.emit("chat message", msg);
     });
 
     socket.on("typing", (data) => {
       socket.broadcast.emit('typing_status', data);
-    })
+    });
 
     socket.on("disconnect", () => {
-       const username = onlineUsers[socket.id];
-       console.log(`${username} disconnected ${socket.id}`);
-
-       socket.broadcast.emit('user-left', username);
-
-       delete onlineUsers[socket.id];
-       io.emit('userOnline', formatUsers(onlineUsers));
+      const username = onlineUsers[socket.id];
+      if (username) {
+        delete onlineUsers[socket.id];
+        socket.broadcast.emit("user-left", username);
+        console.log(`${username} disconnected (${socket.id})`);
+        io.emit("userOnline", { userOnline: onlineUsers });
+      } else {
+        console.log(`Unknown user disconnected (${socket.id})`);
+      }
     });
   });
-
-  function formatUsers(obj){
-    const formattedUsers = Object.entries(obj).map(([socketId, username]) => {
-      return ({ userId: socketId, username });
-    });
-    return formattedUsers;
-  }
 };
 
 module.exports = initializeSocket;
