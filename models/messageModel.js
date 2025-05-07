@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema({
+   participants: [
+     {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+     }
+   ],
    sender: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

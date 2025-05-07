@@ -1,8 +1,8 @@
 const express = require("express");
 const {
-  homeController,
-  chatController,
+  chatController
 } = require("../controllers/chatController");
+const { homeController } = require("../controllers/homeController"); 
 
 const router = express.Router();
 

@@ -29,14 +29,14 @@ const socket = io();
             time.textContent = timestamp;
 
             item.style.cssText = `
-        background-color: #fff;
-        width: 35rem;
-        padding: 12px;
-        text-align: right;
-        margin-left: -9rem;
-        margin-top: 2px;
-        border-radius: 10px;
-      `;
+                background-color: #fff;
+                width: 35rem;
+                padding: 12px;
+                text-align: right;
+                margin-left: -9rem;
+                margin-top: 2px;
+                border-radius: 10px;
+            `;
 
             time.style.fontSize = "10px";
             msg.style.margin = "0 0 5px 10px";
