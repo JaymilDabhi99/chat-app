@@ -6,6 +6,11 @@ const socket = io();
         const notificationText = document.querySelector('.notification-p');
         const username = localStorage.getItem('username') || `Guest${Math.floor(Math.random() * 1000)}`;
         const userList = document.getElementById('userList');
+        const btn2 = document.getElementById('btn2');
+
+        if(!username){
+            window.location.href = '/';
+        }
 
         document.querySelector('.container2').textContent = `Username: ${username}`;
 
@@ -16,40 +21,54 @@ const socket = io();
             if (input.value.trim()) {
                 const timestamp = new Date().toLocaleTimeString();
                 socket.emit('chat message', { message: input.value, timestamp, username });
+                
                 input.value = '';
             }
+
+            
         });
+        
+
+        document.getElementById('btn2').addEventListener('click', () => {
+            localStorage.removeItem('username');
+            window.location.href = '/';
+        })
 
         socket.on('chat message', ({ username: fromUser, message, timestamp }) => {
             const item = document.createElement('div');
             const msg = document.createElement('p');
             const time = document.createElement('span');
-
-            msg.textContent = `${fromUser}: ${message}`;
+            // msg.textContent = `<strong>${fromUser}</strong>`;
+            // item.innerHTML = `<strong>${username}</strong>`;  
+            msg.innerHTML = `<strong>${fromUser}</strong>: ${message}`;
+            
             time.textContent = timestamp;
+
+            
 
             item.style.cssText = `
                 background-color: #fff;
-                width: 35rem;
+                width: 50%;
+                min-height: 1rem;
                 padding: 12px;
-                text-align: right;
-                margin-left: -9rem;
+                margin-left: -10rem;
                 margin-top: 2px;
                 border-radius: 10px;
             `;
 
             time.style.fontSize = "10px";
-            msg.style.margin = "0 0 5px 10px";
+            msg.style.margin = "-4px 0 -4px -1px";
+            // msg.style.width = "20%";
 
             item.appendChild(msg);
             item.appendChild(time);
             messages.appendChild(item);
-            messages.scrollTop = messages.scrollHeight;
+            // messages.scrollTop = messages.scrollHeight;
         });
 
         socket.on('userOnline', (data) => {
             const ul = document.getElementById('userList');
-            ul.innerHTML = ''; // Clear previous list
+            ul.innerHTML = ''; 
             const { userOnline } = data;
         
             for (const id in userOnline) {
@@ -82,6 +101,7 @@ const socket = io();
 
         function showNotification(message) {
             notificationText.textContent = message;
+            notificationText.style.marginLeft = '5px';
             setTimeout(() => notificationText.textContent = '', 3000);
         }
 
