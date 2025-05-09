@@ -1,56 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat App</title>
     <link rel="stylesheet" href="./css/homepage.css">
 </head>
+
 <body>
     <div id="main">
         <h1>Welcome to the Chat App</h1>
         <h4>Please Enter your name to join the chat</h4>
-        <input type="text" placeholder="Enter your name..." id="username-input"/>
+        <input type="text" placeholder="Enter your name..." id="username-input" />
         <button id="btn">Join</button>
         <div id="popup"></div>
-        
+
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
+
         const socket = io();
 
         const btn = document.querySelector('#btn');
         const usernameInput = document.querySelector('#username-input');
         btn.addEventListener('click', () => {
             const username = usernameInput.value;
-            
-            if(username){
+
+            if (username) {
                 localStorage.setItem('username', username);
+                const sender = username.id;
                 console.log(window.location.href);
                 window.location.href = "/chat";
-                
-            }else{
+
+            } else {
                 alert("Please enter a username to join the chat.");
             }
         });
 
-        socket.on("notification", (username) => {
-            showPopup(username);
-        })
+        // socket.on("notification", (username) => {
+        //     showPopup(username);
+        // })
 
-        function showPopup(username) {
-            const popup = document.createElement('div');
-            popup.className = 'popup';
-            popup.innerText = username;
-            document.body.appendChild(popup);
-            setTimeout(() => {
-                popup.remove();
-            }, 3000);
-        }
+        // function showPopup(username) {
+        //     const popup = document.createElement('div');
+        //     popup.className = 'popup';
+        //     popup.innerText = username;
+        //     document.body.appendChild(popup);
+        //     setTimeout(() => {
+        //         popup.remove();
+        //     }, 3000);
+        // }
 
 
 
-        
+
     </script>
 </body>
+
 </html>

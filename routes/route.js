@@ -8,5 +8,6 @@ const router = express.Router();
 
 router.get("/", homeController);
 router.get("/chat", chatController);
+router.post("/fetchChat", chatController);
 
 module.exports = router;

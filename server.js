@@ -10,7 +10,7 @@ const initializeSocket = require("./socket");
 const app = express();
 const server = createServer(app);
 
-connectDB();
+const database = connectDB();
 
 app.use(express.static(join(__dirname, "/public")));
 

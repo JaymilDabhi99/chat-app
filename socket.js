@@ -1,4 +1,5 @@
 const socket = require("socket.io");
+const user = require("./models/userModel");
 
 const initializeSocket = (server) => {
   const io = socket(server, {
@@ -11,12 +12,12 @@ const initializeSocket = (server) => {
   let onlineUsers = {};
 
   io.on("connection", (socket) => {
-    console.log('User connected:', socket.id);
+    // console.log('User connected:', socket.id);
 
-    socket.on("new-user", (username) => {
+    socket.on("new-user", async (username) => {
       console.log(`${username} connected with id: ${socket.id}`);
       onlineUsers[socket.id] = username;
-
+      
       socket.broadcast.emit("user-join", username);
 
       socket.broadcast.emit("userOnline", { userOnline: onlineUsers });
@@ -32,6 +33,7 @@ const initializeSocket = (server) => {
 
     socket.on("chat message", (msg) => {
       io.emit("chat message", msg);
+
     });
 
     socket.on("typing", (data) => {

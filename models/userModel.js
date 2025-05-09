@@ -6,9 +6,9 @@ const userSchema = new mongoose.Schema({
     require: true,
   },
   isOnline: {
-    type: Boolean,
-    default: false,
+    type: String,
+    default: '0',
   },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);
