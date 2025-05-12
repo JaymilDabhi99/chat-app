@@ -6,28 +6,19 @@ body {
 }
 
 h1 {
-    margin-left: 35rem;
+    /* margin-left: 35rem; */
     padding: 1px;
-    /* background-color: seagreen; */
     width: 11%;
     border-radius: 2px;
-
     height: 2rem;
-    /* justify-content: center; */
-    /* align-items: center; */
-
+    margin: 0 auto;
+    padding-bottom: 20px;
 }
 
 .container1 {
-    /* display: flex; */
-    /* flex-direction: column; */
-    /* justify-content: center; */
-    width: 50%;
+    width: 600px;
     height: 30rem;
-    /* align-items: center; */
     background-color: rgb(212, 212, 212);
-    margin-top: 1rem;
-    margin-left: 17rem;
     border: 1px solid #333;
     border-radius: 10px;
     overflow-y: auto;
@@ -36,19 +27,15 @@ h1 {
 
 #form {
     display: flex;
-    margin-left: -1rem;
     width: 100%;
     align-items: center;
-    justify-content: center;
-    margin-top: 30px;
 }
 
 #input {
     padding: 10px;
-    width: 40%;
+    width: 70%;
     border-radius: 5px;
     border: 1px solid #333;
-    /* margin-right: 22rem; */
 }
 
 #input:focus {
@@ -81,42 +68,29 @@ h1 {
 }
 
 
-.msgDiv {}
-
 #messages {
-    /* height: 10px; */
-    margin-top: 0.5rem;
+
+    /* margin-top: 0.5rem; */
     padding-left: 10px;
-    margin-left: 10rem;
+    margin-left: 200px;
     border-radius: 5px;
     word-wrap: break-word;
-    /* width: 25rem; */
 }
 
 .inputIndicator {
     margin-top: -1rem;
-    margin-left: 18rem;
-    margin-bottom: 0;
+    /* margin-left: 18rem; */
+    margin-bottom: 20px;
     height: 0;
-    padding: 0;
+    /* padding: 0; */
 }
 
-/* .notification {
-    font-style: italic;
-    margin-top: 5px;
-} */
 
-.notification-p {
-    /* margin-left: 31rem; */
-    /* margin-bottom: -4rem; */
-}
 
 .container2 {
     background-color: rgb(212, 212, 212);
     width: 11rem;
     height: 7rem;
-    margin-top: -33.5rem;
-    margin-left: 57.5rem;
     border-radius: 10px;
     border: 1px solid #333;
     padding: 10px;
@@ -124,18 +98,47 @@ h1 {
 
 .container3 {
     background-color: rgb(212, 212, 212);
-    width: 12rem;
-    height: 21rem;
+    width: 11rem;
+    height: 20rem;
     margin-top: 0.5rem;
-    margin-left: 57.5rem;
     border-radius: 10px;
     border: 1px solid #333;
+    padding: 10px;
 }
 
-/* #messages>li {
-    padding: 0.5rem 1rem;
-} */
 
-/* #messages>li:nth-child(odd) {
-    background: #efefef;
-} */
+#container {
+    display: flex;
+    justify-content: center;
+}
+
+#mainContainer {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+#part1 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@media(max-width: 768px) {
+    .container1 {
+        width: 300px;
+    }
+
+    #part1 {
+        gap: 5px;
+
+    }
+
+    #input {
+        width: 36%;
+    }
+
+    #messages {
+        margin-left: 50px;
+    }
+}

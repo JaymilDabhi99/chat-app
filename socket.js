@@ -1,5 +1,6 @@
 const socket = require("socket.io");
 const user = require("./models/userModel");
+const Message = require("./models/chatModel");
 
 const initializeSocket = (server) => {
   const io = socket(server, {
@@ -12,7 +13,7 @@ const initializeSocket = (server) => {
   let onlineUsers = {};
 
   io.on("connection", (socket) => {
-    // console.log('User connected:', socket.id);
+    console.log('User connected:', socket.id);
 
     socket.on("new-user", async (username) => {
       console.log(`${username} connected with id: ${socket.id}`);
@@ -31,9 +32,18 @@ const initializeSocket = (server) => {
         socket.emit('userOnline', {userOnline: filteredUsers});
     });
 
-    socket.on("chat message", (msg) => {
-      io.emit("chat message", msg);
-
+    socket.on("chat message", async (msg) => {
+      const user = onlineUsers[socket.id];
+      if(user){
+        const message = await new Message.create({
+          messageText: msg.message,
+          timestamp: msg.timestamp,
+          username: msg.username
+        })
+        io.emit("chat message", msg);
+      }
+      
+      // console.log("Message sent:", msg);
     });
 
     socket.on("typing", (data) => {

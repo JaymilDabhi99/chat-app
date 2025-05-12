@@ -10,28 +10,49 @@
 
 <body>
     <h1>ChatApp</h1>
-    <div class="container1">
-        <div id="messages">
-            <div id="notification">
-                <p class="notification-p"></p>
+
+    <div id="container">
+        <div id="mainContainer">
+            <div id="part1">
+                <div class="container1">
+                    <div id="messages">
+                        <div id="notification">
+                            <p class="notification-p"></p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="child2">
+                    <div class="inputIndicator">
+                        <p class="indicator"></p>
+                    </div>
+                    <form id="form">
+
+                        <input id="input" placeholder="Type Your Message..." autocomplete="off" />
+                        <button type="submit" id="btn1">Send</button>
+                        <button id="btn2" type="button">Exit</button>
+                    </form>
+                </div>
             </div>
+
+            <div id="part2">
+                <div class="container2"></div>
+                <div class="container3">
+                    <ul id="userList"></ul>
+                </div>
+            </div>
+
         </div>
-
     </div>
-    <div class="inputIndicator">
-        <p class="indicator"></p>
-    </div>
-    <form id="form">
 
-        <input id="input" placeholder="Type Your Message..." autocomplete="off" />
-        <button type="submit" id="btn1">Send</button>
-        <button id="btn2" type="button">Exit</button>
-    </form>
 
-    <div class="container2"></div>
-    <div class="container3">
-        <ul id="userList"></ul>
-    </div>
+
+
+
+
+
+
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="./js/chat.js"></script>

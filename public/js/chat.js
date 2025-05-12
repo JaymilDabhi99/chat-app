@@ -13,6 +13,7 @@ const socket = io();
         }
 
         document.querySelector('.container2').textContent = `Username: ${username}`;
+        document.querySelector('.container3').textContent = `Online Users: ${username}`;
 
         socket.emit('new-user', username);
 
@@ -48,7 +49,6 @@ const socket = io();
 
             item.style.cssText = `
                 background-color: #fff;
-                width: 50%;
                 min-height: 1rem;
                 padding: 12px;
                 margin-left: -10rem;
