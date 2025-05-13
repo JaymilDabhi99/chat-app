@@ -1,5 +1,4 @@
 const socket = require("socket.io");
-const user = require("./models/userModel");
 const Message = require("./models/chatModel");
 
 const initializeSocket = (server) => {
@@ -13,37 +12,29 @@ const initializeSocket = (server) => {
   let onlineUsers = {};
 
   io.on("connection", (socket) => {
-    console.log('User connected:', socket.id);
 
+    console.log('User connected:', socket.id);
+    socket.on("userJoin", async () => {
+        const messages = await Message.find({}).sort({ _id: -1 }).limit(10);
+        io.to(socket.id).emit("loadmsgs", messages.reverse());
+    });
     socket.on("new-user", async (username) => {
       console.log(`${username} connected with id: ${socket.id}`);
       onlineUsers[socket.id] = username;
-      
       socket.broadcast.emit("user-join", username);
-
-      socket.broadcast.emit("userOnline", { userOnline: onlineUsers });
-      const filteredUsers = {};
-      for (let id in onlineUsers) {
-        if (id !== socket.id) {
-          filteredUsers[id] = onlineUsers[id];
-        }
-      }
-
-        socket.emit('userOnline', {userOnline: filteredUsers});
+      io.emit("userOnline", { onlineUser: onlineUsers });
     });
 
     socket.on("chat message", async (msg) => {
       const user = onlineUsers[socket.id];
       if(user){
-        const message = await new Message.create({
-          messageText: msg.message,
+        await Message.create({
+          username: msg.username,
+          message: msg.message,
           timestamp: msg.timestamp,
-          username: msg.username
         })
         io.emit("chat message", msg);
       }
-      
-      // console.log("Message sent:", msg);
     });
 
     socket.on("typing", (data) => {
@@ -55,12 +46,15 @@ const initializeSocket = (server) => {
       if (username) {
         delete onlineUsers[socket.id];
         socket.broadcast.emit("user-left", username);
-        console.log(`${username} disconnected (${socket.id})`);
         io.emit("userOnline", { userOnline: onlineUsers });
+        console.log(`${username} disconnected (${socket.id})`);
       } else {
         console.log(`Unknown user disconnected (${socket.id})`);
       }
     });
+    // setInterval(() => {
+    //   socket.emit("userOnline", { onlineUser: onlineUsers });
+    // }, 1000);
   });
 };
 

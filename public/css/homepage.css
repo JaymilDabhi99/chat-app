@@ -22,22 +22,38 @@ h4 {
 }
 
 #btn {
-    display: block;
-    margin-top: -32px;
-    margin-left: 33rem;
+    /* display: block; */
+    /* margin-top: -32px; */
+    /* margin-left: 33rem; */
     padding: 0.5rem 1rem;
     background-color: #333;
     background-color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    width: 10%;
+}
+
+#text-input {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
 }
 
 #username-input {
-    width: 70%;
+    width: 30%;
     padding: 0.5rem;
-    margin-top: 1rem;
-    margin-right: 4rem;
+    /* margin-top: 1rem; */
+    /* margin-right: 4rem; */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#room-input {
+    width: 30%;
+    padding: 0.5rem;
+    /* margin-left: 20px; */
     border: 1px solid #ccc;
     border-radius: 5px;
 }
@@ -52,7 +68,7 @@ h4 {
     }
 
     #btn {
-        margin-left: 30rem;
+        margin-left: 10px;
         /* margin-top: 1rem; */
     }
 }

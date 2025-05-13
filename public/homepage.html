@@ -13,9 +13,14 @@
         <h1>Welcome to the Chat App</h1>
         <h4>Please Enter your name to join the chat</h4>
 
-        <input type="text" placeholder="Enter your name..." id="username-input" />
-        <button id="btn">Join</button>
-        <div id="popup"></div>
+        <div id="text-input">
+            <input type="text" placeholder="Enter your name..." id="username-input" />
+            <input type="text" id="room-input" placeholder="Enter room id" />
+            <button id="btn">Join</button>
+        </div>
+
+
+
 
     </div>
     <script src="/socket.io/socket.io.js"></script>
@@ -25,17 +30,21 @@
 
         const btn = document.querySelector('#btn');
         const usernameInput = document.querySelector('#username-input');
+        const roomInput = document.getElementById('room-input');
         btn.addEventListener('click', () => {
             const username = usernameInput.value;
+            const room = roomInput.value;
 
-            if (username) {
+            if (username && room) {
                 localStorage.setItem('username', username);
-                const sender = username.id;
+                localStorage.setItem('room', room);
+                const senderUsername = username.id;
+                const senderRoom = room.id;
                 console.log(window.location.href);
                 window.location.href = "/chat";
 
             } else {
-                alert("Please enter a username to join the chat.");
+                alert("Please enter a username or roomId to join the chat.");
             }
         });
 
