@@ -7,50 +7,57 @@ const socket = io();
         const userList = document.getElementById('userList');
         const btn2 = document.getElementById('btn2');
         const username = localStorage.getItem('username');
+        const room = localStorage.getItem('room');
 
-        document.querySelector('.container2').textContent = `Username: ${username}`;
+        document.querySelector('.container2').textContent = `Username: ${username} | Room: ${room}`;
         
-        socket.emit('userJoin');
+        // Join the specific room
+        socket.emit('joinRoom', { username, room });
 
-        socket.emit('new-user', username);
 
+        // Form submission (send messages)
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             if (input.value.trim()) {
                 const timestamp = new Date().toLocaleTimeString();
-                socket.emit('chat message', { message: input.value, timestamp, username });
+                socket.emit('chat message', { message: input.value, timestamp, username, room });
                 input.value = '';
             }
         });
         
-
+        // Leave room
         btn2.addEventListener('click', () => {
             localStorage.removeItem('username');
+            localStorage.removeItem('room');
             window.location.href = '/';
         })
 
-
-        socket.on("loadmsgs", (messagesArray) => {
+        // Load recent messages
+        socket.on("loadMessages", (messagesArray) => {
           messagesArray.forEach(({ username, message, timestamp }) => {
             appendMessage(username, message, timestamp);
           });        
         });  
 
+        // Handle new chat message
         socket.on('chat message', ({ username, message, timestamp }) => {
             appendMessage(username, message, timestamp);
         });
 
-        socket.on('userOnline', ({ onlineUser }) => {
+        // Update user list in room
+        socket.on('userOnline', ({ onlineUsers }) => {
             userList.innerHTML = '';
-            for (const id in onlineUser) {
-                if(onlineUser[id] != username){
+            onlineUsers.forEach(user => {
+                if(user !== username){
                     const li = document.createElement('li');
-                    li.textContent = onlineUser[id];
+                    li.textContent = user;
                     userList.appendChild(li);
                 }
-            }
+            });
         });
         
+
+        // Typing indicator
         const msgInput = document.getElementById('input');
         msgInput.addEventListener('focus', () => {
             socket.emit('typing', { username, typing: true });
@@ -64,6 +71,7 @@ const socket = io();
             indicator.textContent = typing && typingUser !== username ? `${typingUser} is typing...` : '';
         });
 
+        // Join and leave notifications
         socket.on('user-join', (joinedUser) => {
             showNotification(`${joinedUser} has joined the chat`);
         });
@@ -72,6 +80,8 @@ const socket = io();
             showNotification(`${leftUser} has left the chat`);
         });
 
+
+        // Clear localStorage on disconnect
         socket.on("disconnect", () => {
             localStorage.clear();
         });
@@ -81,7 +91,7 @@ const socket = io();
             const msg = document.createElement('p');
             const time = document.createElement('span');
 
-            msg.innerHTML = `<strong>${username}:</strong> ${message}`;
+            msg.innerHTML = `[<strong>${username}</strong>]: ${message}`;
             time.textContent = timestamp;
 
             item.style.cssText = `
@@ -91,10 +101,18 @@ const socket = io();
               margin-left: -205px;
               margin-top: 2px;
               border-radius: 10px;
-              width: 70%;
+              width: 40%;
             `;
 
-            time.style.fontStyle = "10px";
+            if(username === localStorage.getItem('username')){
+                item.style.marginLeft = '325px';
+                item.style.backgroundColor = '#fff';
+            }else{
+                item.style.marginLeft = '3px';
+                item.style.backgroundColor = '#fff';
+            }
+
+            time.style.fontSize = "10px";
             msg.style.margin = "-4px 0 -4px -1px";
 
             item.appendChild(msg);

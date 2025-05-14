@@ -5,6 +5,10 @@ const messageSchema = new mongoose.Schema({
     type: String,
     required: true
    },
+   roomId: {
+    type: Number,
+    required: true
+   },
    message: {
     type: String,
     required: true

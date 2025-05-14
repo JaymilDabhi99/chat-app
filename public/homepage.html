@@ -15,13 +15,9 @@
 
         <div id="text-input">
             <input type="text" placeholder="Enter your name..." id="username-input" />
-            <input type="text" id="room-input" placeholder="Enter room id" />
+            <input type="text" id="room-input" maxlength="5" placeholder="Enter room id" size="5" />
             <button id="btn">Join</button>
         </div>
-
-
-
-
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -32,38 +28,23 @@
         const usernameInput = document.querySelector('#username-input');
         const roomInput = document.getElementById('room-input');
         btn.addEventListener('click', () => {
-            const username = usernameInput.value;
-            const room = roomInput.value;
+            const username = usernameInput.value.trim();
+            const room = roomInput.value.trim();
 
             if (username && room) {
                 localStorage.setItem('username', username);
                 localStorage.setItem('room', room);
-                const senderUsername = username.id;
-                const senderRoom = room.id;
-                console.log(window.location.href);
+
+                socket.emit('joinRoom', { username, room });
+                // const senderUsername = username.id;
+                // const senderRoom = room.id;
+                // console.log(window.location.href);
                 window.location.href = "/chat";
 
             } else {
                 alert("Please enter a username or roomId to join the chat.");
             }
         });
-
-        // socket.on("notification", (username) => {
-        //     showPopup(username);
-        // })
-
-        // function showPopup(username) {
-        //     const popup = document.createElement('div');
-        //     popup.className = 'popup';
-        //     popup.innerText = username;
-        //     document.body.appendChild(popup);
-        //     setTimeout(() => {
-        //         popup.remove();
-        //     }, 3000);
-        // }
-
-
-
 
     </script>
 </body>

@@ -12,49 +12,56 @@ const initializeSocket = (server) => {
   let onlineUsers = {};
 
   io.on("connection", (socket) => {
-
     console.log('User connected:', socket.id);
-    socket.on("userJoin", async () => {
-        const messages = await Message.find({}).sort({ _id: -1 }).limit(10);
-        io.to(socket.id).emit("loadmsgs", messages.reverse());
+    
+    socket.on("joinRoom", async ({ username, room }) => {
+      console.log(`${username} joined room: ${room}`);
+
+      socket.join(room);
+      onlineUsers[socket.id] = { username, room };
+
+      const messages = await Message.find({ roomId: room }).sort({ _id: -1 }).limit(20);
+      socket.emit("loadMessages", messages.reverse());
+
+      socket.to(room).emit("user-join", username);
+
+      const usersInRoom = Object.values(onlineUsers).filter(u => u.room === room).map(u => u.username);
+      io.to(room).emit("userOnline", { onlineUsers: usersInRoom });
     });
-    socket.on("new-user", async (username) => {
-      console.log(`${username} connected with id: ${socket.id}`);
-      onlineUsers[socket.id] = username;
-      socket.broadcast.emit("user-join", username);
-      io.emit("userOnline", { onlineUser: onlineUsers });
-    });
+    
 
     socket.on("chat message", async (msg) => {
       const user = onlineUsers[socket.id];
-      if(user){
+      if(user && user.room === msg.room){
         await Message.create({
           username: msg.username,
+          roomId: msg.room,
           message: msg.message,
           timestamp: msg.timestamp,
-        })
-        io.emit("chat message", msg);
+        });
+        io.to(msg.room).emit("chat message", msg);
       }
     });
 
     socket.on("typing", (data) => {
-      socket.broadcast.emit('typing_status', data);
+      const user = onlineUsers[socket.id];
+      if(user){
+        socket.to(user.room).emit('typing_status', data);
+      }
     });
 
     socket.on("disconnect", () => {
-      const username = onlineUsers[socket.id];
-      if (username) {
+      const user = onlineUsers[socket.id];
+      if (user) {
+        socket.to(user.room).emit("user-left", user.username);
         delete onlineUsers[socket.id];
-        socket.broadcast.emit("user-left", username);
-        io.emit("userOnline", { userOnline: onlineUsers });
-        console.log(`${username} disconnected (${socket.id})`);
-      } else {
-        console.log(`Unknown user disconnected (${socket.id})`);
+
+        const usersInRoom = Object.values(onlineUsers).filter(u => u.room === user.room).map(u => u.username);
+        io.to(user.room).emit("userOnline", { userOnline: usersInRoom });
+
+        console.log(`${user.username} disconnected from room ${user.room}`);
       }
     });
-    // setInterval(() => {
-    //   socket.emit("userOnline", { onlineUser: onlineUsers });
-    // }, 1000);
   });
 };
 
