@@ -93,6 +93,7 @@ const socket = io();
 
             msg.innerHTML = `[<strong>${username}</strong>]: ${message}`;
             time.textContent = timestamp;
+            // item.textContent = notificationText;
 
             item.style.cssText = `
               background-color: #fff;
@@ -118,9 +119,11 @@ const socket = io();
             item.appendChild(msg);
             item.appendChild(time);
             messages.appendChild(item);
+            messages.append(notificationText);
         }
 
         function showNotification(message) {
+            notificationText.textContent = messages;
             notificationText.textContent = message;
             notificationText.style.marginLeft = '5px';
             setTimeout(() => notificationText.textContent = '', 3000);
