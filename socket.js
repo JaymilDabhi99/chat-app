@@ -28,6 +28,13 @@ const initializeSocket = (server) => {
       const usersInRoom = Object.values(onlineUsers).filter(u => u.room === room).map(u => u.username);
       io.to(room).emit("userOnline", { onlineUsers: usersInRoom });
     });
+
+    socket.on("typing", (data) => {
+      const user = onlineUsers[socket.id];
+      if(user){
+        socket.to(user.room).emit('typing_status', data);
+      }
+    });
     
 
     socket.on("chat message", async (msg) => {
@@ -43,12 +50,15 @@ const initializeSocket = (server) => {
       }
     });
 
-    socket.on("typing", (data) => {
+    socket.on('delete-message', async ({ _id }) => {
       const user = onlineUsers[socket.id];
+      await Message.findByIdAndDelete(_id);
       if(user){
-        socket.to(user.room).emit('typing_status', data);
+        io.to(user.room).emit('message-deleted', { _id });
       }
+      
     });
+    
 
     socket.on("disconnect", () => {
       const user = onlineUsers[socket.id];

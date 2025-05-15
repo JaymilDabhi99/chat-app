@@ -36,16 +36,14 @@ const socket = io();
             window.location.href = '/';
         })
 
-        // Load recent messages
-        socket.on("loadMessages", (messagesArray) => {
-          messagesArray.forEach(({ username, message, timestamp }) => {
-            appendMessage(username, message, timestamp);
-          });        
-        });  
 
-        // Handle new chat message
-        socket.on('chat message', ({ username, message, timestamp }) => {
-            appendMessage(username, message, timestamp);
+        // Join and leave notifications
+        socket.on('user-join', (joinedUser) => {
+            showNotification(`${joinedUser} has joined the chat`);
+        });
+
+        socket.on('user-left', (leftUser) => {
+            showNotification(`${leftUser} has left the chat`);
         });
 
         // Update user list in room
@@ -59,7 +57,6 @@ const socket = io();
                 }
             });
         });
-        
 
         // Typing indicator
         const msgInput = document.getElementById('input');
@@ -75,25 +72,38 @@ const socket = io();
             indicator.textContent = typing && typingUser !== username ? `${typingUser} is typing...` : '';
         });
 
-        // Join and leave notifications
-        socket.on('user-join', (joinedUser) => {
-            showNotification(`${joinedUser} has joined the chat`);
+
+        // Handle new chat message
+        socket.on('chat message', ({ username, message, timestamp, _id }) => {
+            appendMessage(username, message, timestamp, _id);
         });
 
-        socket.on('user-left', (leftUser) => {
-            showNotification(`${leftUser} has left the chat`);
-        });
+        // Load recent messages
+        socket.on("loadMessages", (messagesArray) => {
+          messagesArray.forEach(({ username, message, timestamp, _id }) => {
+            appendMessage(username, message, timestamp, _id);
+          });        
+        });  
 
+        socket.on('message-deleted', ({ _id }) => {
+          const messageElement = document.querySelector(`[data-id="${_id}"]`);
+          if(messageElement){
+            messageElement.remove();
+          }
+        });
+        
 
         // Clear localStorage on disconnect
         socket.on("disconnect", () => {
             localStorage.clear();
         });
 
-        function appendMessage(username, message, timestamp){
+        function appendMessage(username, message, timestamp, _id){
             const item = document.createElement('div');
             const msg = document.createElement('p');
             const time = document.createElement('span');
+            // const msgDiv = document.createElement('div');
+            item.setAttribute('data-id', _id);
 
             msg.innerHTML = `[<strong>${username}</strong>]: ${message}`;
             time.textContent = timestamp;
@@ -109,6 +119,39 @@ const socket = io();
               width: 40%;
             `;
 
+            item.classList.add('message-div'); 
+            
+            // create 3-dot icon
+            const menuIcon = document.createElement('span');
+            menuIcon.className = 'menu-icon';
+            menuIcon.textContent = '⋮';
+
+            // create dropdown menu
+            const dropdown = document.createElement('div');
+            dropdown.className = 'dropdown-menu';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            dropdown.appendChild(deleteBtn);
+
+
+            // Toggle dropdown on 3-dot click
+            menuIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            })
+
+            // handle delete
+            deleteBtn.addEventListener('click', () => {
+                socket.emit('delete-message', { _id });
+            })
+
+            // hide dropdown when clicked outside
+            document.addEventListener('click', () => {
+                dropdown.style.display = 'none';
+            });
+            
+
             if(username === localStorage.getItem('username')){
                 item.style.marginLeft = '325px';
                 item.style.backgroundColor = '#fff';
@@ -117,11 +160,13 @@ const socket = io();
                 item.style.backgroundColor = '#fff';
             }
 
-            time.style.fontSize = "10px";
+            time.style.fontSize = "11px";
             msg.style.margin = "-4px 0 -4px -1px";
 
             item.appendChild(msg);
             item.appendChild(time);
+            item.appendChild(menuIcon);
+            item.appendChild(dropdown);
             messages.appendChild(item);
             messages.append(notificationText);
         }

@@ -28,12 +28,67 @@ h1 {
 #messages {
     height: 420px;
     width: 600px;
-    /* padding-le   ft: 10px; */
+    /* padding-left: 10px; */
     /* margin-left: 10px; */
     border-radius: 5px;
     word-wrap: break-word;
     overflow-y: auto;
     border: 1px solid rgb(133, 133, 133);
+}
+
+.message-div {
+    position: relative;
+    background-color: #fff;
+    min-height: 1rem;
+    padding: 12px;
+    margin: 4px 0;
+    border-radius: 10px;
+    width: 40%;
+    transition: background-color 0.3s ease;
+}
+
+.message-div:hover {
+    background-color: #f0f0f0;
+}
+
+.menu-icon {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    cursor: pointer;
+    display: none;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.message-div:hover,
+.menu-icon {
+    display: block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 30px;
+    right: 8px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    display: none;
+    z-index: 10;
+}
+
+.dropdown-menu button {
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+    background-color: #eee;
 }
 
 
