@@ -19,7 +19,11 @@ const socket = io();
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             if (input.value.trim()) {
-                const timestamp = new Date().toLocaleTimeString();
+                const timestamp = new Date().toLocaleTimeString('en-US',{
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
                 socket.emit('chat message', { message: input.value, timestamp, username, room });
                 input.value = '';
             }
