@@ -127,7 +127,7 @@ const socket = io();
         }
 
         function showNotification(message) {
-            notificationText.textContent = messages;
+            // notificationText.textContent = messages;
             notificationText.textContent = message;
             notificationText.style.marginLeft = '5px';
             setTimeout(() => notificationText.textContent = '', 3000);
