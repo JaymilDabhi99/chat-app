@@ -1,10 +1,29 @@
+body {
+    background-color: #ffffff;
+    color: #000000;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+body.dark-mode #main {
+    background-color: #303030;
+}
+
+body.dark-mode #main h1 h4 {
+    background-color: #fff;
+}
+
 #main {
     margin-top: 30px;
     margin-left: 19rem;
     padding: 0.2rem;
     width: 50%;
     height: 20rem;
-    background-color: black;
+    background-color: rgb(106 116 122);
     border-radius: 20px;
     text-align: center;
 }

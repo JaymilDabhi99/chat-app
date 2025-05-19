@@ -2,8 +2,33 @@ body {
     margin: 0;
     padding-bottom: 3rem;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: rgb(183, 234, 217);
+    background-color: #c0e2fa;
+    color: #000000;
+    transition: background-color 0.3s, color 0.3s;
 }
+
+body.dark-mode {
+    background-color: #181a1b;
+    color: #ffffff;
+}
+
+body.dark-mode #messages {
+    background-color: #303030;
+}
+
+.container1,
+.container2,
+.container3,
+#messages,
+#form,
+input,
+button {
+    background-color: #f5f5f5;
+    /* stays same in both modes */
+    color: #000;
+}
+
+
 
 h1 {
     /* margin-left: 35rem; */
@@ -34,7 +59,10 @@ h1 {
     word-wrap: break-word;
     overflow-y: auto;
     border: 1px solid rgb(133, 133, 133);
+    background-color: #ccc;
 }
+
+
 
 .message-div {
     position: relative;
@@ -93,30 +121,56 @@ h1 {
 
 
 #form {
+    position: relative;
     display: flex;
-    width: 100%;
+    background-color: #ccc;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
     align-items: center;
-    margin-top: 18px;
-    /* margin-top: 300px; */
-    /* margin-left: 10px; */
-    /* overflow-x: hidden; */
+    width: 100%;
+
 }
 
 #input {
-    padding: 9px;
-    width: 70%;
-    border-radius: 5px;
-    border: 1px solid #333;
-    margin-left: 5px;
+    /* padding-right: 40px; */
+    width: 100%;
+    min-height: 30px;
+    /* padding: 10px 90px 10px 10px; */
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    resize: none;
+    margin-left: 6px;
+    font-size: 14px;
 }
 
 #input[type=text]:focus {
-    border: 1px solid #555;
+    border-bottom: 1px solid #555;
+}
+
+#emoji-btn {
+    right: 10px;
+}
+
+#uploadBtn {
+    right: 40px;
+}
+
+.icon-btn {
+    position: absolute;
+    background: transparent;
+    bottom: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
 }
 
 #btn1 {
     background: #333;
-    width: 70px;
+    width: 55px;
     border: none;
     padding: 9px;
     margin: 0.25rem;
@@ -129,7 +183,7 @@ h1 {
 
 #btn2 {
     background: #333;
-    width: 70px;
+    width: 55px;
     border: none;
     padding: 9px;
     margin: 0.25rem;
@@ -161,10 +215,18 @@ h1 {
 .container2 {
     background-color: rgb(212, 212, 212);
     width: 11rem;
-    height: 7rem;
+    height: 3rem;
     border-radius: 10px;
     border: 1px solid #333;
     padding: 10px;
+}
+
+.badge {
+    background-color: #4caf50;
+    color: white;
+    padding: 2px 5px;
+    font-size: 5px;
+    border-radius: 12px;
 }
 
 .container3 {

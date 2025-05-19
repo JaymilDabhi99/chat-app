@@ -6,10 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat App</title>
     <link rel="stylesheet" href="./css/chat.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picmo/popup-picker@latest/dist/styles.css">
+
 </head>
 
 <body>
-    <h1>ChatApp</h1>
+    <button id="toggle-theme-btn">Mode</button>
+    <h1>CHATAPP</h1>
 
     <div id="container">
         <div id="mainContainer">
@@ -28,7 +31,15 @@
                     </div>
 
                     <form id="form">
-                        <input id="input" placeholder="Type Your Message..." autocomplete="off" />
+                        <div class="input-wrapper">
+                            <textarea id="input" type="text" placeholder="Type Your Message..."
+                                autocomplete="off"></textarea>
+                            <input type="file" id="fileInput" , accept="image/*, video/*" hidden />
+                            <button type="button" id="uploadBtn" class="icon-btn" title="Attach image">📎</button>
+                            <button type="button" id="emoji-btn" class="icon-btn" title="Insert emoji">😊</button>
+
+                        </div>
+
                         <button type="submit" id="btn1">Send</button>
                         <button id="btn2" type="button">Exit</button>
                     </form>
@@ -45,7 +56,9 @@
                 <div class="container2"></div>
                 <div class="container3">
                     <span>Online Users:</span>
-                    <ul id="userList"></ul>
+                    <ul id="userList">
+
+                    </ul>
                 </div>
             </div>
 
@@ -53,7 +66,8 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="./js/chat.js"></script>
+    <!-- <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script> -->
+    <script src="./js/chat.js" type="module"></script>
 </body>
 
 </html>

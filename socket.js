@@ -52,9 +52,20 @@ const initializeSocket = (server) => {
 
     socket.on('delete-message', async ({ _id }) => {
       const user = onlineUsers[socket.id];
-      await Message.findByIdAndDelete(_id);
-      if(user){
-        io.to(user.room).emit('message-deleted', { _id });
+      if(!user) return;
+      try {
+        const message = await Message.findById(_id);
+        if(!message) return;
+
+        if(message.username === user.username){
+          await Message.findByIdAndDelete(_id);
+          io.to(user.room).emit('message-deleted', { _id });
+        }else{
+          socket.emit('delete-error', { message: "You can't delete messages from other users" });
+        }
+      } catch (error) {
+        console.error("Error deleting message", error);
+        socket.emit('delete-error', { message: "Failed to delete message." });
       }
       
     });
