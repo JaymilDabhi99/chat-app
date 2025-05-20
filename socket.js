@@ -1,5 +1,9 @@
+require('dotenv').config();
 const socket = require("socket.io");
+const cloudinary = require("cloudinary").v2;
+
 const Message = require("./models/chatModel");
+const Media = require("./models/mediaModel");
 
 const initializeSocket = (server) => {
   const io = socket(server, {
@@ -8,6 +12,12 @@ const initializeSocket = (server) => {
       methods: ['GET', 'POST']
     },
   });
+
+  // cloudinary.config({
+  //   cloud_name: process.env.cloud_name,
+  //   api_key: process.env.api_key,
+  //   api_secret: process.env.api_secret
+  // })
 
   let onlineUsers = {};
 
@@ -20,7 +30,7 @@ const initializeSocket = (server) => {
       socket.join(room);
       onlineUsers[socket.id] = { username, room };
 
-      const messages = await Message.find({ roomId: room }).sort({ _id: -1 }).limit(20);
+      const messages = await Message.find({ roomId: room }).sort({ _id: -1 }).limit(20).populate("media");
       socket.emit("loadMessages", messages.reverse());
 
       socket.to(room).emit("user-join", username);
@@ -38,15 +48,55 @@ const initializeSocket = (server) => {
     
 
     socket.on("chat message", async (msg) => {
+      // console.log("SERVER: Received chat message", msg);
       const user = onlineUsers[socket.id];
       if(user && user.room === msg.room){
-        await Message.create({
+        let mediaIds = [];
+
+        if(msg.media && typeof msg.media === 'object'){
+          const { base64, type } = msg.media;
+        //  console.log("Received media:", msg.media);
+
+          // console.log("Type: ",type);
+
+          const matches = base64.match(/^data:(.+);base64,(.+)$/);
+          if(matches && matches.length === 3) {
+            if(type === 'image'){
+              const mediaDoc = await Media.create({
+                url: base64,
+                type,
+                uploadedBy: user._id,
+              });
+              mediaIds.push(mediaDoc._id);
+            }else if(type === 'video'){
+              const uploadedVideo = await cloudinary.uploader.upload(base64, {
+                resource_type: "video"
+              });
+              console.log("Cloudinary upload result:", uploadedVideo);
+
+
+              const mediaDoc = await Media.create({
+                url: uploadedVideo.secure_url,
+                type,
+                uploadedBy: user._id,
+              });
+              mediaIds.push(mediaDoc._id);
+            }
+          }
+        }
+
+        const newMsg = await Message.create({
           username: msg.username,
           roomId: msg.room,
           message: msg.message,
           timestamp: msg.timestamp,
+          media: mediaIds,
         });
-        io.to(msg.room).emit("chat message", msg);
+        const mediaDocs = await Media.find({ _id: { $in: mediaIds } });
+        io.to(msg.room).emit("chat message", {
+          ...msg,
+          media: mediaDocs.map(m => ({ url: m.url, type: m.type })),
+        });
       }
     });
 

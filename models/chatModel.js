@@ -11,12 +11,16 @@ const messageSchema = new mongoose.Schema({
    },
    message: {
     type: String,
-    required: true
+    required: false
    },
    timestamp: {
     type: String,
     default: Date.now
    },
+   media: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Media'
+   }],
    
 });
 

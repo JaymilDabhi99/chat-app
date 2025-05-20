@@ -54,8 +54,8 @@ h1 {
     height: 420px;
     width: 600px;
     /* padding-left: 10px; */
-    /* margin-left: 10px; */
-    border-radius: 5px;
+    margin-left: -1px;
+    border-radius: 10px;
     word-wrap: break-word;
     overflow-y: auto;
     border: 1px solid rgb(133, 133, 133);
@@ -135,15 +135,14 @@ h1 {
 }
 
 #input {
-    /* padding-right: 40px; */
     width: 100%;
     min-height: 30px;
-    /* padding: 10px 90px 10px 10px; */
     border: 1px solid #ccc;
     border-radius: 8px;
     resize: none;
     margin-left: 6px;
     font-size: 14px;
+    align-items: start;
 }
 
 #input[type=text]:focus {

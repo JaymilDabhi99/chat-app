@@ -45,18 +45,24 @@ const socket = io();
 
 
 
-        let base64Image = null;
+        let base64Media = null;
+        let mediaType= null;
         uploadBtn.addEventListener('click', () => fileInput.click());
 
+        // let isMediaReady = false;
         fileInput.addEventListener('change', () => {
-            const file = fileInput.files[0];
+            const file = fileInput.files[0];  // Get the selected file
             if(file){
                 const reader = new FileReader();
-                reader.onloadend = () => {
-                    base64Image = reader.result;
-                    console.log("Base64 Image:", base64Image);
+                mediaType = file.type.startsWith("image") ? "image" : "video";
+                reader.onload = () => {
+                    base64Media = reader.result;   // read base64 encoded data
+                    // console.log("Sending:", mediaType, base64Media);
+                    //  sendMessage();
+                    // isMediaReady = true;
+                    // console.log("Sending:", mediaType, base64Media);
                 };
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(file);  // convert file to base64 string
             }
         });
 
@@ -67,21 +73,52 @@ const socket = io();
 
 
         // Form submission (send messages)
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
 
+        // function sendMessage(){
+           form.addEventListener('submit', (e) => {
+            e.preventDefault();
             const message = input.value.trim();
-            if(!message && !base64Image) return;
+            if(message || base64Media){
                 const timestamp = new Date().toLocaleTimeString('en-US',{
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: true
                 });
-                socket.emit('chat message', { message: input.value, timestamp, username, room });
+
+                const messagePayload = {
+                    message,
+                    timestamp,
+                    username,
+                    room
+                };
+
+                console.log("Sending payload:", messagePayload);
+
+                if(base64Media){
+                    messagePayload.media = {
+                        base64: base64Media,
+                        type: mediaType
+                    };
+                }
+                //  console.log("Emitting:", messagePayload);
+
+                console.log("Sending payload:", messagePayload);
+
+                socket.emit('chat message', messagePayload);
+                // console.log("Emitting socket message:", messagePayload);
+
                 input.value = '';
-                fileInput.value = '';
-                base64Image = null;
+                base64Media = null;
+                mediaType = null;  
+            }
         });
+        // }
+
+    //     form.addEventListener('submit', (e) => {
+    //     e.preventDefault();
+    //     sendMessage();
+    //    });
+        
         
         // Leave room
         btn2.addEventListener('click', () => {
@@ -113,9 +150,9 @@ const socket = io();
                 userList.appendChild(li);
             }
         });
-    } else {
-        console.warn('onlineUsers is not an array:', onlineUsers);
-    }
+        } else {
+            console.warn('onlineUsers is not an array:', onlineUsers);
+        }
         });
 
         // Typing indicator
@@ -134,14 +171,16 @@ const socket = io();
 
 
         // Handle new chat message
-        socket.on('chat message', ({ username, message, timestamp, _id }) => {
-            appendMessage(username, message, timestamp, _id);
+        socket.on('chat message', ({ username, message, timestamp, _id, media }) => {
+            appendMessage(username, message, timestamp, _id, media);
         });
 
         // Load recent messages
         socket.on("loadMessages", (messagesArray) => {
-          messagesArray.forEach(({ username, message, timestamp, _id }) => {
-            appendMessage(username, message, timestamp, _id);
+            console.log("Mesge:", messagesArray);
+          messagesArray.forEach(({ username, message, timestamp, _id, media }) => {
+            console.log("media:", media);
+            appendMessage(username, message, timestamp, _id, media);
           });        
         });  
 
@@ -158,7 +197,8 @@ const socket = io();
             localStorage.clear();
         });
 
-        function appendMessage(username, message, timestamp, _id){
+        function appendMessage(username, message, timestamp, _id, media = []){
+            console.log("Mediaaaa:",media);
             const currentUser = localStorage.getItem('username');
             const item = document.createElement('div');
             const msg = document.createElement('p');
@@ -171,6 +211,28 @@ const socket = io();
             msg.innerHTML = `[<strong>${username}</strong>]: ${message}`;
             time.textContent = timestamp;
             // item.textContent = notificationText;
+
+            // console.log("Received media", msg.media);
+            media.forEach(file => {
+                console.log("fileurl:",file.url);
+                if(file.type === 'image' || file.url.startsWith('image/')){
+                    const img = document.createElement('img');
+                    img.src = file.url;
+                    img.alt = 'Image';
+                    img.style.maxWidth = '200px';
+                    img.style.display = 'block';
+                    img.style.marginTop = '8px';
+                    item.appendChild(img);
+                }else if(file.type === 'video' || file.url.startsWith('https://')){
+                    const video = document.createElement('video');
+                    video.src = file.url;
+                    video.controls = true;
+                    video.style.maxWidth = '250px';
+                    video.style.display = 'block';
+                    video.style.marginTop = '8px';
+                    item.appendChild(video);
+                }
+            });
 
             item.style.cssText = `
               background-color: rgb(194 194 194);
