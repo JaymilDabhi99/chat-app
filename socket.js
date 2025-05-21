@@ -7,17 +7,24 @@ const Media = require("./models/mediaModel");
 
 const initializeSocket = (server) => {
   const io = socket(server, {
+    maxHttpBufferSize: 1e7,
     cors: {
       origin: "*",
       methods: ['GET', 'POST']
     },
   });
-
-  // cloudinary.config({
-  //   cloud_name: process.env.cloud_name,
-  //   api_key: process.env.api_key,
-  //   api_secret: process.env.api_secret
-  // })
+  // console.log("process:", process.env);
+  // const cloud_name = process.env.cloud_name;
+  // const api_key = process.env.api_key;
+  // const api_secret = process.env.api_secret;
+  cloudinary.config({
+    cloud_name: process.env.cloud_name,
+    api_key: process.env.api_key,
+    api_secret: process.env.api_secret
+    // cloud_name,
+    // api_key,
+    // api_secret  
+  })
 
   let onlineUsers = {};
 
@@ -50,10 +57,11 @@ const initializeSocket = (server) => {
     socket.on("chat message", async (msg) => {
       // console.log("SERVER: Received chat message", msg);
       const user = onlineUsers[socket.id];
-      if(user && user.room === msg.room){
+      if(!user && user.room !== msg.room) return;
         let mediaIds = [];
 
-        if(msg.media && typeof msg.media === 'object'){
+        try {
+          if(msg.media && typeof msg.media === 'object'){
           const { base64, type } = msg.media;
         //  console.log("Received media:", msg.media);
 
@@ -72,7 +80,8 @@ const initializeSocket = (server) => {
               const uploadedVideo = await cloudinary.uploader.upload(base64, {
                 resource_type: "video"
               });
-              console.log("Cloudinary upload result:", uploadedVideo);
+              // console.log("process:", process.env);
+              // console.log("Cloudinary upload result:", uploadedVideo);
 
 
               const mediaDoc = await Media.create({
@@ -97,7 +106,13 @@ const initializeSocket = (server) => {
           ...msg,
           media: mediaDocs.map(m => ({ url: m.url, type: m.type })),
         });
-      }
+        } catch (error) {
+          console.error("Error handling chat message:", error);
+          socket.emit("chat-error", {
+            message: "Failed to send message. Please try again.",
+          });
+        }
+      
     });
 
     socket.on('delete-message', async ({ _id }) => {
@@ -124,7 +139,7 @@ const initializeSocket = (server) => {
     socket.on("disconnect", () => {
       const user = onlineUsers[socket.id];
       if (user) {
-        socket.to(user.room).emit("user-left", user.username);
+        socket.broadcast.to(user.room).emit("user-left", user.username);
         delete onlineUsers[socket.id];
 
         const usersInRoom = Object.values(onlineUsers).filter(u => u.room === user.room).map(u => u.username);

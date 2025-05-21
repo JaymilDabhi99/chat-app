@@ -1,7 +1,9 @@
 import { createPopup } from 'https://cdn.skypack.dev/@picmo/popup-picker';
+    
 const socket = io();
 
-
+const username = localStorage.getItem('username');
+        const room = localStorage.getItem('room');
         const toggleThemeBtn = document.getElementById('toggle-theme-btn');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
@@ -9,10 +11,9 @@ const socket = io();
         const notificationText = document.querySelector('.notification-p');
         const userList = document.getElementById('userList');
         const btn2 = document.getElementById('btn2');
-        const username = localStorage.getItem('username');
-        const room = localStorage.getItem('room');
         const triggerButton = document.querySelector('#emoji-btn');
         const fileInput = document.getElementById('fileInput');
+        // const filenameDisplay = document.getElementById('filenameDisplay');
         const uploadBtn = document.getElementById('uploadBtn');
 
         document.body.classList.toggle('dark-mode', localStorage.getItem('theme') === 'dark');
@@ -52,12 +53,14 @@ const socket = io();
         // let isMediaReady = false;
         fileInput.addEventListener('change', () => {
             const file = fileInput.files[0];  // Get the selected file
+            console.log("Filename:",file.name);
             if(file){
+                // input.textContent = `${file.name}`;
                 const reader = new FileReader();
                 mediaType = file.type.startsWith("image") ? "image" : "video";
                 reader.onload = () => {
                     base64Media = reader.result;   // read base64 encoded data
-                    // console.log("Sending:", mediaType, base64Media);
+                    console.log("Sending:", mediaType, base64Media);
                     //  sendMessage();
                     // isMediaReady = true;
                     // console.log("Sending:", mediaType, base64Media);
@@ -86,13 +89,15 @@ const socket = io();
                 });
 
                 const messagePayload = {
-                    message,
                     timestamp,
                     username,
                     room
                 };
 
-                console.log("Sending payload:", messagePayload);
+                if(message){
+                    messagePayload.message = message;
+                }
+                // console.log("Sending payload:", messagePayload);
 
                 if(base64Media){
                     messagePayload.media = {
@@ -102,12 +107,13 @@ const socket = io();
                 }
                 //  console.log("Emitting:", messagePayload);
 
-                console.log("Sending payload:", messagePayload);
+                // console.log("Sending payload:", messagePayload);
 
                 socket.emit('chat message', messagePayload);
                 // console.log("Emitting socket message:", messagePayload);
 
                 input.value = '';
+                fileInput.value = '';
                 base64Media = null;
                 mediaType = null;  
             }
@@ -177,7 +183,7 @@ const socket = io();
 
         // Load recent messages
         socket.on("loadMessages", (messagesArray) => {
-            console.log("Mesge:", messagesArray);
+            console.log("Msgarr:", messagesArray);
           messagesArray.forEach(({ username, message, timestamp, _id, media }) => {
             console.log("media:", media);
             appendMessage(username, message, timestamp, _id, media);
@@ -190,15 +196,20 @@ const socket = io();
             messageElement.remove();
           }
         });
+
+        socket.on('delivered', () => {
+            
+        })
         
 
         // Clear localStorage on disconnect
-        socket.on("disconnect", () => {
-            localStorage.clear();
-        });
+        // socket.on("disconnect", () => {
+        //     localStorage.clear();
+        // });
 
         function appendMessage(username, message, timestamp, _id, media = []){
-            console.log("Mediaaaa:",media);
+            let text;
+            // console.log("Mediaaaa:",media);
             const currentUser = localStorage.getItem('username');
             const item = document.createElement('div');
             const msg = document.createElement('p');
@@ -208,29 +219,30 @@ const socket = io();
 
             // const user = onlineUsers[socket.id];
 
-            msg.innerHTML = `[<strong>${username}</strong>]: ${message}`;
+            if(message){
+               text=message; 
+            }
+            msg.innerHTML = `<strong>${username}</strong>: ${message?text:''}`;
             time.textContent = timestamp;
-            // item.textContent = notificationText;
+            // item.textContent = notificationText;x`
 
             // console.log("Received media", msg.media);
             media.forEach(file => {
-                console.log("fileurl:",file.url);
-                if(file.type === 'image' || file.url.startsWith('image/')){
+                // console.log("fileurl:",file.url);
+                if(file.type === 'image' || file.url.startsWith('data:image')){
                     const img = document.createElement('img');
                     img.src = file.url;
                     img.alt = 'Image';
-                    img.style.maxWidth = '200px';
+                    img.style.maxWidth = '189px';
                     img.style.display = 'block';
-                    img.style.marginTop = '8px';
-                    item.appendChild(img);
+                    msg.appendChild(img);
                 }else if(file.type === 'video' || file.url.startsWith('https://')){
                     const video = document.createElement('video');
                     video.src = file.url;
                     video.controls = true;
-                    video.style.maxWidth = '250px';
+                    video.style.maxWidth = '189px';
                     video.style.display = 'block';
-                    video.style.marginTop = '8px';
-                    item.appendChild(video);
+                    msg.appendChild(video);
                 }
             });
 
@@ -280,7 +292,7 @@ const socket = io();
             
 
             if(username === localStorage.getItem('username')){
-                item.style.marginLeft = '325px';
+                item.style.marginLeft = '392px';
                 item.style.backgroundColor = '#fff';
             }else{
                 item.style.marginLeft = '3px';
@@ -312,5 +324,3 @@ const socket = io();
             notificationText.style.marginLeft = '5px';
             setTimeout(() => notificationText.textContent = '', 3000);
         }
-
-        
