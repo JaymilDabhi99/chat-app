@@ -147,15 +147,15 @@ const username = localStorage.getItem('username');
         socket.on('userOnline', ({ onlineUsers }) => {
             userList.innerHTML = '';
             if (Array.isArray(onlineUsers)) {
-        onlineUsers.forEach((user) => {
-            if (user !== username) {
-                const li = document.createElement('li');
-                li.classList.add('online-user');
-                li.innerHTML = `<span class="user-name">${user}</span>
-                <span class="badge"></span>`;
-                userList.appendChild(li);
-            }
-        });
+            onlineUsers.forEach((user) => {
+                if (user !== username) {
+                    const li = document.createElement('li');
+                    li.classList.add('online-user');
+                    li.innerHTML = `<span class="user-name">${user}</span>
+                    <span class="badge"></span>`;
+                    userList.appendChild(li);
+                }
+            });
         } else {
             console.warn('onlineUsers is not an array:', onlineUsers);
         }
@@ -292,7 +292,7 @@ const username = localStorage.getItem('username');
             
 
             if(username === localStorage.getItem('username')){
-                item.style.marginLeft = '392px';
+                item.style.marginLeft = '472px';
                 item.style.backgroundColor = '#fff';
             }else{
                 item.style.marginLeft = '3px';

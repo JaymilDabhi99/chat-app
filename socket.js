@@ -40,7 +40,7 @@ const initializeSocket = (server) => {
       const messages = await Message.find({ roomId: room }).sort({ _id: -1 }).limit(20).populate("media");
       socket.emit("loadMessages", messages.reverse());
 
-      socket.to(room).emit("user-join", username);
+      socket.broadcast.to(room).emit("user-join", username);
 
       const usersInRoom = Object.values(onlineUsers).filter(u => u.room === room).map(u => u.username);
       io.to(room).emit("userOnline", { onlineUsers: usersInRoom });
