@@ -26,7 +26,7 @@ const initializeSocket = (server) => {
     // api_secret  
   })
 
-  let onlineUsers = {};
+  const onlineUsers = {};
 
   io.on("connection", (socket) => {
     console.log('User connected:', socket.id);
@@ -34,6 +34,8 @@ const initializeSocket = (server) => {
     socket.on("joinRoom", async ({ username, room }) => {
       console.log(`${username} joined room: ${room}`);
 
+      socket.username = username;
+      socket.room = room;
       socket.join(room);
       onlineUsers[socket.id] = { username, room };
 

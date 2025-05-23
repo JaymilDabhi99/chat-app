@@ -11,26 +11,25 @@
 </head>
 
 <body>
-    <button id="toggle-theme-btn">Mode</button>
-    <h1>CHATAPP</h1>
+    <button id="toggle-theme-btn">🌙</button>
+    <h1>CHATROOM</h1>
 
     <div id="container">
         <div id="mainContainer">
             <div id="part1">
+                <div class="online-users-container">
+                    <span>Online Users</span>
+                    <ul class="online-users-list"></ul>
+                </div>
                 <div class="container1">
                     <div id="header">
                         <div class="container2"></div>
-                        <div class="container3">
-                            <button id="onlineUsersBtn">Online Users</button>
-                            <ul id="userList" class="user-list hidden"></ul>
 
-                        </div>
                         <button id="btn2" type="button">Exit</button>
                     </div>
+
                     <div id="messages">
-                        <div id="notification">
-                            <p class="notification-p"></p>
-                        </div>
+
                     </div>
 
                     <div id="child2">
@@ -41,11 +40,12 @@
 
                     <form id="form">
                         <div class="input-wrapper">
-                            <textarea id="input" placeholder="Type Your Message..." autocomplete="off"></textarea>
+                            <input id="input" placeholder="Type Your Message..." autocomplete="off">
 
                             <button type="button" id="uploadBtn" class="icon-btn">📎</button>
                             <button type="button" id="emoji-btn" class="icon-btn">😊</button>
-                            <input type="file" id="fileInput" , accept="image/*,video/*" />
+                            <input type="file" id="fileInput" , accept="image/*,video/*" hidden />
+                            </input>
                             <!-- <div id="filenameDisplay" class="filename-display"></div> -->
                         </div>
 

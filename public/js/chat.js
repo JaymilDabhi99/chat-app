@@ -8,7 +8,7 @@ const username = localStorage.getItem('username');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
         const messages = document.getElementById('messages');
-        const notificationText = document.querySelector('.notification-p');
+        // const notificationText = document.querySelector('.notification-p');
         const userList = document.getElementById('userList');
         const btn2 = document.getElementById('btn2');
         const triggerButton = document.querySelector('#emoji-btn');
@@ -17,6 +17,7 @@ const username = localStorage.getItem('username');
         const uploadBtn = document.getElementById('uploadBtn');
 
         document.body.classList.toggle('dark-mode', localStorage.getItem('theme') === 'dark');
+        toggleThemeBtn.textContent = localStorage.getItem('theme') === 'dark' ? '☀️' : '🌙';
 
         if(toggleThemeBtn){
             toggleThemeBtn.addEventListener('click', () => {
@@ -24,7 +25,7 @@ const username = localStorage.getItem('username');
                 const currentTheme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
                 localStorage.setItem('theme', currentTheme);
                 toggleThemeBtn.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
-            })
+            });
         }
 
         document.querySelector('.container2').textContent = `Username: ${username} | Room: ${room}`;
@@ -145,20 +146,20 @@ const username = localStorage.getItem('username');
 
         // Update user list in room
         socket.on('userOnline', ({ onlineUsers }) => {
-            userList.innerHTML = '';
+            const list = document.querySelector('.online-users-list');
+            list.innerHTML = '';
+
             if (Array.isArray(onlineUsers)) {
-            onlineUsers.forEach((user) => {
-                if (user !== username) {
-                    const li = document.createElement('li');
-                    li.classList.add('online-user');
-                    li.innerHTML = `<span class="user-name">${user}</span>
-                    <span class="badge"></span>`;
-                    userList.appendChild(li);
-                }
-            });
-        } else {
-            console.warn('onlineUsers is not an array:', onlineUsers);
-        }
+                onlineUsers.forEach((user) => {
+                    if (user !== username) {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>${user}</span><span class="badge"></span>`;
+                        list.appendChild(li);
+                    }
+                });
+            } else {
+                console.warn('onlineUsers is not an array:', onlineUsers);
+            }
         });
 
         // Typing indicator
@@ -254,6 +255,7 @@ const username = localStorage.getItem('username');
               margin-top: 2px;
               border-radius: 10px;
               width: 40%;
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             `;
 
             item.classList.add('message-div'); 
@@ -307,7 +309,7 @@ const username = localStorage.getItem('username');
             item.appendChild(menuIcon);
             item.appendChild(dropdown);
             messages.appendChild(item);
-            messages.append(notificationText);
+            // messages.append(notificationText);
         }
 
         function insertAtCursor(input, emoji){
@@ -319,8 +321,9 @@ const username = localStorage.getItem('username');
         }
 
         function showNotification(message) {
-            // notificationText.textContent = messages;
-            notificationText.textContent = message;
-            notificationText.style.marginLeft = '5px';
-            setTimeout(() => notificationText.textContent = '', 3000);
+            const notification = document.createElement('div');
+            notification.className = 'chat-notification';
+            notification.textContent = message;
+            messages.appendChild(notification);
+            messages.scrollTop = messages.scrollHeight;
         }
