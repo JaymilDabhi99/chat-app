@@ -26,26 +26,28 @@ const initializeSocket = (server) => {
     // api_secret  
   })
 
-  const onlineUsers = {};
+  const onlineUsers = [];
 
   io.on("connection", (socket) => {
-    console.log('User connected:', socket.id);
+    // console.log('User connected:', socket.id);
     
     socket.on("joinRoom", async ({ username, room }) => {
-      console.log(`${username} joined room: ${room}`);
-
+      
+      socket.join(room);
       socket.username = username;
       socket.room = room;
-      socket.join(room);
+      
       onlineUsers[socket.id] = { username, room };
 
       const messages = await Message.find({ roomId: room }).sort({ _id: -1 }).limit(20).populate("media");
       socket.emit("loadMessages", messages.reverse());
 
-      socket.broadcast.to(room).emit("user-join", username);
-
+      socket.broadcast.to(room).emit("user_join", username);
+      
       const usersInRoom = Object.values(onlineUsers).filter(u => u.room === room).map(u => u.username);
       io.to(room).emit("userOnline", { onlineUsers: usersInRoom });
+      // console.log(`${username} joined room: ${room}`);
+
     });
 
     socket.on("typing", (data) => {
@@ -141,13 +143,15 @@ const initializeSocket = (server) => {
     socket.on("disconnect", () => {
       const user = onlineUsers[socket.id];
       if (user) {
-        socket.broadcast.to(user.room).emit("user-left", user.username);
+        const { username, room } = user;
+        // delete onlineUsers[socket.id];
+        socket.broadcast.to(user.room).emit("user_left", user.username);
         delete onlineUsers[socket.id];
 
         const usersInRoom = Object.values(onlineUsers).filter(u => u.room === user.room).map(u => u.username);
-        io.to(user.room).emit("userOnline", { userOnline: usersInRoom });
+        io.to(room).emit("userOnline", { onlineUsers: usersInRoom });
 
-        console.log(`${user.username} disconnected from room ${user.room}`);
+        // console.log(`${user.username} disconnected from room ${user.room}`);
       }
     });
   });

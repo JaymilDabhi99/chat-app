@@ -73,7 +73,7 @@ const username = localStorage.getItem('username');
 
         
         // Join the specific room
-        socket.emit('joinRoom', { username, room });
+        socket.emit('joinRoom', { username, room, userId: localStorage.getItem('userId') });
 
 
         // Form submission (send messages)
@@ -129,6 +129,7 @@ const username = localStorage.getItem('username');
         
         // Leave room
         btn2.addEventListener('click', () => {
+            // socket.disconnect();
             localStorage.removeItem('username');
             localStorage.removeItem('room');
             window.location.href = '/';
@@ -136,12 +137,14 @@ const username = localStorage.getItem('username');
 
 
         // Join and leave notifications
-        socket.on('user-join', (joinedUser) => {
-            showNotification(`${joinedUser} has joined the chat`);
+        socket.on('user_join', (username) => {
+            showNotification(`${username} has joined the chat`);
+            // console.log("Joineduser:",joinedUser);
         });
 
-        socket.on('user-left', (leftUser) => {
-            showNotification(`${leftUser} has left the chat`);
+        socket.on('user_left', (username) => {
+            showNotification(`${username} has left the chat`);
+            // console.log("Leftuser:",leftUser);
         });
 
         // Update user list in room
@@ -184,9 +187,9 @@ const username = localStorage.getItem('username');
 
         // Load recent messages
         socket.on("loadMessages", (messagesArray) => {
-            console.log("Msgarr:", messagesArray);
+            // console.log("Msgarr:", messagesArray);
           messagesArray.forEach(({ username, message, timestamp, _id, media }) => {
-            console.log("media:", media);
+            // console.log("media:", media);
             appendMessage(username, message, timestamp, _id, media);
           });        
         });  
@@ -309,6 +312,7 @@ const username = localStorage.getItem('username');
             item.appendChild(menuIcon);
             item.appendChild(dropdown);
             messages.appendChild(item);
+            messages.scrollTop = messages.scrollHeight;
             // messages.append(notificationText);
         }
 
@@ -325,5 +329,5 @@ const username = localStorage.getItem('username');
             notification.className = 'chat-notification';
             notification.textContent = message;
             messages.appendChild(notification);
-            messages.scrollTop = messages.scrollHeight;
+            
         }
