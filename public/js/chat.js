@@ -1,333 +1,247 @@
-import { createPopup } from 'https://cdn.skypack.dev/@picmo/popup-picker';
-    
+import { createPopup } from "https://cdn.skypack.dev/@picmo/popup-picker";
+
 const socket = io();
 
-const username = localStorage.getItem('username');
-        const room = localStorage.getItem('room');
-        const toggleThemeBtn = document.getElementById('toggle-theme-btn');
-        const form = document.getElementById('form');
-        const input = document.getElementById('input');
-        const messages = document.getElementById('messages');
-        // const notificationText = document.querySelector('.notification-p');
-        const userList = document.getElementById('userList');
-        const btn2 = document.getElementById('btn2');
-        const triggerButton = document.querySelector('#emoji-btn');
-        const fileInput = document.getElementById('fileInput');
-        // const filenameDisplay = document.getElementById('filenameDisplay');
-        const uploadBtn = document.getElementById('uploadBtn');
+const username = localStorage.getItem("username");
+const room = localStorage.getItem("room");
 
-        document.body.classList.toggle('dark-mode', localStorage.getItem('theme') === 'dark');
-        toggleThemeBtn.textContent = localStorage.getItem('theme') === 'dark' ? '☀️' : '🌙';
+const toggleThemeBtn = document.getElementById("toggle-theme-btn");
+const form = document.getElementById("form");
+const input = document.getElementById("input");
+const messages = document.getElementById("messages");
+const btn2 = document.getElementById("btn2");
+const triggerButton = document.querySelector("#emoji-btn");
+const fileInput = document.getElementById("fileInput");
+const uploadBtn = document.getElementById("uploadBtn");
 
-        if(toggleThemeBtn){
-            toggleThemeBtn.addEventListener('click', () => {
-                document.body.classList.toggle('dark-mode');
-                const currentTheme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-                localStorage.setItem('theme', currentTheme);
-                toggleThemeBtn.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
-            });
-        }
+// Theme toggle
+if (toggleThemeBtn) {
+  document.body.classList.toggle(
+    "dark-mode",
+    localStorage.getItem("theme") === "dark"
+  );
+  toggleThemeBtn.textContent =
+    localStorage.getItem("theme") === "dark" ? "☀️" : "🌙";
+  toggleThemeBtn.addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+    const theme = document.body.classList.contains("dark-mode")
+      ? "dark"
+      : "light";
+    localStorage.setItem("theme", theme);
+    toggleThemeBtn.textContent = theme === "dark" ? "☀️" : "🌙";
+  });
+}
 
-        document.querySelector('.container2').textContent = `Username: ${username} | Room: ${room}`;
+// Display user info
+if (username && room) {
+  document.querySelector(
+    ".container2"
+  ).textContent = `Username: ${username} | Room: ${room}`;
+  socket.emit("joinRoom", { username, room });
+  initNotificationHandlers();
+}
 
-        const picker = createPopup({hideOnEmojiSelect: false,}, {
-            triggerElement: triggerButton,
-            referenceElement: triggerButton,
-            position: 'top-end'
-        });
+// Emoji picker
+const picker = createPopup(
+  { hideOnEmojiSelect: false },
+  {
+    triggerElement: triggerButton,
+    referenceElement: triggerButton,
+    position: "top-end",
+  }
+);
 
-        triggerButton.addEventListener('click', (e) => {
-            e.preventDefault(); 
-            picker.toggle();
-        });
+triggerButton.addEventListener("click", (e) => {
+  e.preventDefault();
+  picker.toggle();
+});
+picker.addEventListener("emoji:select", (e) => insertAtCursor(input, e.emoji));
 
-        picker.addEventListener('emoji:select', event => {
-            insertAtCursor(input, event.emoji);
-        });
+let base64Media = null;
+let mediaType = null;
+uploadBtn.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0]; // Get the selected file
+  if (file) {
+    mediaType = file.type.startsWith("image") ? "image" : "video";
+    const reader = new FileReader();
+    reader.onload = () => (base64Media = reader.result); // read base64 encoded data
+    reader.readAsDataURL(file); // convert file to base64 string
+  }
+});
 
+// Send message
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const message = input.value.trim();
+  if (!message && !base64Media) return;
 
+  const timestamp = new Date().toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+  const payload = { username, room, timestamp };
+  if (message) payload.message = message;
+  if (base64Media) payload.media = { base64: base64Media, type: mediaType };
 
-        let base64Media = null;
-        let mediaType= null;
-        uploadBtn.addEventListener('click', () => fileInput.click());
+  socket.emit("chat message", payload);
 
-        // let isMediaReady = false;
-        fileInput.addEventListener('change', () => {
-            const file = fileInput.files[0];  // Get the selected file
-            console.log("Filename:",file.name);
-            if(file){
-                // input.textContent = `${file.name}`;
-                const reader = new FileReader();
-                mediaType = file.type.startsWith("image") ? "image" : "video";
-                reader.onload = () => {
-                    base64Media = reader.result;   // read base64 encoded data
-                    console.log("Sending:", mediaType, base64Media);
-                    //  sendMessage();
-                    // isMediaReady = true;
-                    // console.log("Sending:", mediaType, base64Media);
-                };
-                reader.readAsDataURL(file);  // convert file to base64 string
-            }
-        });
+  input.value = "";
+  fileInput.value = "";
+  base64Media = null;
+  mediaType = null;
+});
 
+btn2.addEventListener("click", () => {
+  localStorage.removeItem("username");
+  localStorage.removeItem("room");
+  window.location.href = "/";
+});
 
-        
-        // Join the specific room
-        socket.emit('joinRoom', { username, room, userId: localStorage.getItem('userId') });
+// Notifications
+function initNotificationHandlers() {
+  socket.on("user_join", (u) => {
+    socket.off("user_join");
+    socket.off("user_left");
+    console.log("join event received");
+    showNotification(`${u} has joined the chat`);
+  });
+  socket.on("user_left", (u) => showNotification(`${u} has left the chat`));
+}
 
+// Online users
+socket.on("userOnline", ({ onlineUsers }) => {
+  const list = document.querySelector(".online-users-list");
+  list.innerHTML = "";
+  onlineUsers.forEach((user) => {
+    if (user !== username) {
+      const li = document.createElement("li");
+      li.innerHTML = `<span>${user}</span><span class="badge"></span>`;
+      list.appendChild(li);
+    }
+  });
+});
 
-        // Form submission (send messages)
+// Typing indicator
+input.addEventListener("focus", () =>
+  socket.emit("typing", { username, typing: true })
+);
+input.addEventListener("blur", () =>
+  socket.emit("typing", { username, typing: false })
+);
+socket.on("typing_status", ({ username: typingUser, typing }) => {
+  const indicator = document.querySelector(".indicator");
+  indicator.textContent =
+    typing && typingUser !== username ? `${typingUser} is typing...` : "";
+});
 
-        // function sendMessage(){
-           form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const message = input.value.trim();
-            if(message || base64Media){
-                const timestamp = new Date().toLocaleTimeString('en-US',{
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                });
+// Incoming messages
+socket.on("chat message", appendMessage);
+socket.on("loadMessages", (msgs) => msgs.forEach(appendMessage));
+socket.on("message-deleted", ({ _id }) => {
+  const msg = document.querySelector(`[data-id="${_id}"]`);
+  if (msg) msg.remove();
+});
 
-                const messagePayload = {
-                    timestamp,
-                    username,
-                    room
-                };
+function appendMessage({
+  username: user,
+  message,
+  timestamp,
+  _id,
+  media = [],
+}) {
+  const currentUser = localStorage.getItem("username");
+  const item = document.createElement("div");
+  const msg = document.createElement("p");
+  const time = document.createElement("span");
+  item.setAttribute("data-id", _id);
 
-                if(message){
-                    messagePayload.message = message;
-                }
-                // console.log("Sending payload:", messagePayload);
+  let text;
+  if (message) {
+    text = message;
+  }
 
-                if(base64Media){
-                    messagePayload.media = {
-                        base64: base64Media,
-                        type: mediaType
-                    };
-                }
-                //  console.log("Emitting:", messagePayload);
+  msg.innerHTML = `<strong>${user}</strong>: ${message ? `: ${message}` : ""}`;
+  time.textContent = timestamp;
 
-                // console.log("Sending payload:", messagePayload);
+  media.forEach((file) => {
+    if (file.type === "image" || file.url.startsWith("data:image")) {
+      const img = document.createElement("img");
+      img.src = file.url;
+      img.alt = "Image";
+      img.style.maxWidth = "189px";
+      img.style.display = "block";
+      msg.appendChild(img);
+    } else if (file.type === "video" || file.url.startsWith("https://")) {
+      const video = document.createElement("video");
+      video.src = file.url;
+      video.controls = true;
+      video.style.maxWidth = "189px";
+      video.style.display = "block";
+      msg.appendChild(video);
+    }
+  });
 
-                socket.emit('chat message', messagePayload);
-                // console.log("Emitting socket message:", messagePayload);
+  const menuIcon = document.createElement("span");
+  menuIcon.className = "menu-icon";
+  menuIcon.textContent = "⋮";
 
-                input.value = '';
-                fileInput.value = '';
-                base64Media = null;
-                mediaType = null;  
-            }
-        });
-        // }
+  const dropdown = document.createElement("div");
+  dropdown.className = "dropdown-menu";
+  if (user === currentUser) {
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", () =>
+      socket.emit("delete-message", { _id })
+    );
+    dropdown.appendChild(deleteBtn);
+  }
 
-    //     form.addEventListener('submit', (e) => {
-    //     e.preventDefault();
-    //     sendMessage();
-    //    });
-        
-        
-        // Leave room
-        btn2.addEventListener('click', () => {
-            // socket.disconnect();
-            localStorage.removeItem('username');
-            localStorage.removeItem('room');
-            window.location.href = '/';
-        })
+  menuIcon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.style.display =
+      dropdown.style.display === "block" ? "none" : "block";
+  });
 
+  document.addEventListener("click", () => (dropdown.style.display = "none"));
 
-        // Join and leave notifications
-        socket.on('user_join', (username) => {
-            showNotification(`${username} has joined the chat`);
-            // console.log("Joineduser:",joinedUser);
-        });
+  item.className = "message-div";
 
-        socket.on('user_left', (username) => {
-            showNotification(`${username} has left the chat`);
-            // console.log("Leftuser:",leftUser);
-        });
-
-        // Update user list in room
-        socket.on('userOnline', ({ onlineUsers }) => {
-            const list = document.querySelector('.online-users-list');
-            list.innerHTML = '';
-
-            if (Array.isArray(onlineUsers)) {
-                onlineUsers.forEach((user) => {
-                    if (user !== username) {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<span>${user}</span><span class="badge"></span>`;
-                        list.appendChild(li);
-                    }
-                });
-            } else {
-                console.warn('onlineUsers is not an array:', onlineUsers);
-            }
-        });
-
-        // Typing indicator
-        const msgInput = document.getElementById('input');
-        msgInput.addEventListener('focus', () => {
-            socket.emit('typing', { username, typing: true });
-        });
-        msgInput.addEventListener('blur', () => {
-            socket.emit('typing', { username, typing: false });
-        });
-
-        socket.on('typing_status', ({ username: typingUser, typing }) => {
-            const indicator = document.querySelector('.indicator');
-            indicator.textContent = typing && typingUser !== username ? `${typingUser} is typing...` : '';
-        });
-
-
-        // Handle new chat message
-        socket.on('chat message', ({ username, message, timestamp, _id, media }) => {
-            appendMessage(username, message, timestamp, _id, media);
-        });
-
-        // Load recent messages
-        socket.on("loadMessages", (messagesArray) => {
-            // console.log("Msgarr:", messagesArray);
-          messagesArray.forEach(({ username, message, timestamp, _id, media }) => {
-            // console.log("media:", media);
-            appendMessage(username, message, timestamp, _id, media);
-          });        
-        });  
-
-        socket.on('message-deleted', ({ _id }) => {
-          const messageElement = document.querySelector(`[data-id="${_id}"]`);
-          if(messageElement){
-            messageElement.remove();
-          }
-        });
-
-        socket.on('delivered', () => {
-            
-        })
-        
-
-        // Clear localStorage on disconnect
-        // socket.on("disconnect", () => {
-        //     localStorage.clear();
-        // });
-
-        function appendMessage(username, message, timestamp, _id, media = []){
-            let text;
-            // console.log("Mediaaaa:",media);
-            const currentUser = localStorage.getItem('username');
-            const item = document.createElement('div');
-            const msg = document.createElement('p');
-            const time = document.createElement('span');
-            // const msgDiv = document.createElement('div');
-            item.setAttribute('data-id', _id);
-
-            // const user = onlineUsers[socket.id];
-
-            if(message){
-               text=message; 
-            }
-            msg.innerHTML = `<strong>${username}</strong>: ${message?text:''}`;
-            time.textContent = timestamp;
-            // item.textContent = notificationText;x`
-
-            // console.log("Received media", msg.media);
-            media.forEach(file => {
-                // console.log("fileurl:",file.url);
-                if(file.type === 'image' || file.url.startsWith('data:image')){
-                    const img = document.createElement('img');
-                    img.src = file.url;
-                    img.alt = 'Image';
-                    img.style.maxWidth = '189px';
-                    img.style.display = 'block';
-                    msg.appendChild(img);
-                }else if(file.type === 'video' || file.url.startsWith('https://')){
-                    const video = document.createElement('video');
-                    video.src = file.url;
-                    video.controls = true;
-                    video.style.maxWidth = '189px';
-                    video.style.display = 'block';
-                    msg.appendChild(video);
-                }
-            });
-
-            item.style.cssText = `
+  item.style.cssText = `
               background-color: rgb(194 194 194);
-              min-height: 1rem;
+            //   min-height: 1rem;
               padding: 12px;
               margin-left: -205px;
               margin-top: 2px;
               border-radius: 10px;
               width: 40%;
-              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+              box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
             `;
+  item.style.marginLeft = user === currentUser ? "585px" : "3px";
 
-            item.classList.add('message-div'); 
-            
-            const menuIcon = document.createElement('span');
-            menuIcon.className = 'menu-icon';
-            menuIcon.textContent = '⋮';
+  msg.style.margin = "-4px 0 -4px -1px";
+  time.style.fontSize = "11px";
 
-            const dropdown = document.createElement('div');
-            dropdown.className = 'dropdown-menu';
+  item.appendChild(msg);
+  item.appendChild(time);
+  item.appendChild(menuIcon);
+  item.appendChild(dropdown);
+  messages.appendChild(item);
+  messages.scrollTop = messages.scrollHeight;
+}
 
-            if(username === currentUser){
-               const deleteBtn = document.createElement('button');
-               deleteBtn.textContent = 'Delete';
+function insertAtCursor(input, emoji) {
+  const [start, end] = [input.selectionStart, input.selectionEnd];
+  const text = input.value;
+  input.value = text.slice(0, start) + emoji + text.slice(end);
+  input.selectionStart = input.selectionEnd = start + emoji.length;
+  input.focus();
+}
 
-               deleteBtn.addEventListener('click', () => {
-                socket.emit('delete-message', { _id });
-               })
-
-               dropdown.appendChild(deleteBtn);
-            }
-
-            menuIcon.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-            });
-
-            // deleteBtn.addEventListener('click', () => {
-            //     socket.emit('delete-message', { _id });
-            // });
-
-            // hide dropdown when clicked outside
-            document.addEventListener('click', () => {
-                dropdown.style.display = 'none';
-            });
-            
-
-            if(username === localStorage.getItem('username')){
-                item.style.marginLeft = '472px';
-                item.style.backgroundColor = '#fff';
-            }else{
-                item.style.marginLeft = '3px';
-                item.style.backgroundColor = '#fff';
-            }
-
-            time.style.fontSize = "11px";
-            msg.style.margin = "-4px 0 -4px -1px";
-
-            item.appendChild(msg);
-            item.appendChild(time);
-            item.appendChild(menuIcon);
-            item.appendChild(dropdown);
-            messages.appendChild(item);
-            messages.scrollTop = messages.scrollHeight;
-            // messages.append(notificationText);
-        }
-
-        function insertAtCursor(input, emoji){
-           const [start,end] = [input.selectionStart, input.selectionEnd];
-           const text = input.value;
-           input.value = text.slice(0, start) + emoji + text.slice(end);
-           input.selectionStart = input.selectionEnd = start + emoji.length;
-           input.focus();
-        }
-
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'chat-notification';
-            notification.textContent = message;
-            messages.appendChild(notification);
-            
-        }
+function showNotification(message) {
+  const div = document.createElement("div");
+  div.className = "chat-notification";
+  div.textContent = message;
+  messages.appendChild(div);
+}

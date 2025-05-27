@@ -1,77 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat App</title>
     <link rel="stylesheet" href="./css/chat.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picmo/popup-picker@latest/dist/styles.css">
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picmo/popup-picker@latest/dist/styles.css"
+    />
+  </head>
 
-</head>
-
-<body>
+  <body>
     <button id="toggle-theme-btn">🌙</button>
     <h1>CHATROOM</h1>
 
     <div id="container">
-        <div id="mainContainer">
-            <div id="part1">
-                <div class="online-users-container">
-                    <span>Online Users</span>
-                    <ul class="online-users-list"></ul>
-                </div>
-                <div class="container1">
-                    <div id="header">
-                        <div class="container2"></div>
+      <div id="mainContainer">
+        <!-- Sidebar for users -->
+        <aside id="sidebar">
+          <div class="online-users-container">
+            <span>Online Users</span>
+            <ul class="online-users-list"></ul>
+          </div>
+        </aside>
 
-                        <button id="btn2" type="button">Exit</button>
-                    </div>
+        <!-- Main chat area -->
+        <main class="chat-main">
+          <header id="header">
+            <div class="container2"></div>
+            <button id="btn2">Exit</button>
+          </header>
 
-                    <div id="messages">
+          <section id="messages"></section>
 
-                    </div>
+          <div class="inputIndicator">
+            <p class="indicator"></p>
+          </div>
 
-                    <div id="child2">
-                        <div class="inputIndicator">
-                            <p class="indicator"></p>
-                        </div>
-                    </div>
+          <form id="form">
+            <div class="input-wrapper">
+              <input
+                id="input"
+                placeholder="Type Your Message..."
+                autocomplete="off"
+              />
 
-                    <form id="form">
-                        <div class="input-wrapper">
-                            <input id="input" placeholder="Type Your Message..." autocomplete="off">
-
-                            <button type="button" id="uploadBtn" class="icon-btn">📎</button>
-                            <button type="button" id="emoji-btn" class="icon-btn">😊</button>
-                            <input type="file" id="fileInput" , accept="image/*,video/*" hidden />
-                            </input>
-                            <!-- <div id="filenameDisplay" class="filename-display"></div> -->
-                        </div>
-
-                        <button type="submit" id="btn1">Send</button>
-
-                    </form>
-
-
-
-
-                </div>
-
-
+              <button type="button" id="uploadBtn" class="icon-btn">📎</button>
+              <button type="button" id="emoji-btn" class="icon-btn">😊</button>
+              <input
+                type="file"
+                id="fileInput"
+                ,
+                accept="image/*,video/*"
+                hidden
+              />
             </div>
-
-            <div id="part2">
-
-
-            </div>
-
-        </div>
+            <button type="submit" id="btn1">Send</button>
+          </form>
+        </main>
+      </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <!-- <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script> -->
     <script src="./js/chat.js" type="module"></script>
-</body>
-
+  </body>
 </html>
