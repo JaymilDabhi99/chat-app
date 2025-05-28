@@ -1,7 +1,7 @@
 /* Base Styles */
 body {
   margin: 0;
-  font-family: 'Segoe UI', Roboto, sans-serif;
+  font-family: "Segoe UI", Roboto, sans-serif;
   background-color: #edf8ff;
   color: #000;
   transition: 0.3s ease;
@@ -248,9 +248,39 @@ h1 {
   .icon-btn {
     margin-left: 5px;
   }
+
+  #messages {
+    padding: 8px;
+    margin: 8px 0;
+  }
+
+  .message-div {
+    max-width: 90%;
+    font-size: 14px;
+    padding: 9px;
+  }
+
+  .menu-icon {
+    font-size: 15px;
+    top: 5px;
+    right: 7px;
+  }
+
+  .dropdown-menu {
+    top: 28px;
+    right: 7px;
+  }
+
+  .dropdown-menu button {
+    padding: 7px 11px;
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 480px) {
+  * {
+    box-sizing: border-box;
+  }
   h1 {
     font-size: 20px;
   }
@@ -263,5 +293,35 @@ h1 {
     font-size: 18px;
     top: 10px;
     right: 10px;
+  }
+
+  #messages {
+    padding: 6px;
+    margin: 6px 0;
+    /* overflow-x: hidden; */
+    word-wrap: break-word;
+  }
+
+  .message-div {
+    max-width: 100%;
+    font-size: 13px;
+    padding: 8px;
+    word-break: break-word;
+  }
+
+  .menu-icon {
+    font-size: 14px;
+    top: 4px;
+    right: 6px;
+  }
+
+  .dropdown-menu {
+    top: 26px;
+    right: 6px;
+  }
+
+  .dropdown-menu button {
+    padding: 6px 10px;
+    font-size: 13px;
   }
 }

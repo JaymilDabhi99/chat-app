@@ -11,8 +11,11 @@ cloudinary.config({
   api_secret: process.env.api_secret,
 });
 
-// In-memory store for online users (socketId -> { username, room })
-const onlineUsers = new Map();
+// In-memory stores
+const onlineUsers = new Map(); //  socketId -> { username, room }
+const disconnectTimers = new Map(); // socketId → timeoutId
+
+const persistentUser = {};
 
 function initializeSocket(server) {
   const io = socketIO(server, {
@@ -27,7 +30,6 @@ function initializeSocket(server) {
     console.log(`Socket connected: ${socket.id}`);
 
     socket.once("joinRoom", (data) => handleJoinRoom(socket, io, data));
-
     socket.on("typing", (data) => handleTyping(socket, data));
     socket.on("chat message", (msg) => handleChat(socket, io, msg));
     socket.on("delete-message", (data) => handleDelete(socket, io, data));
@@ -35,23 +37,46 @@ function initializeSocket(server) {
   });
 }
 
-async function handleJoinRoom(socket, io, { username, room }) {
+async function handleJoinRoom(socket, io, { username, room } = {}) {
   try {
+    const wasAlreadyRoom = persistentUser[`${username}_{room}`];
+
+    // Cancel any pending “left” event for this user
+    for (const [oldId, user] of onlineUsers.entries()) {
+      if (user.username === username && disconnectTimers.has(oldId)) {
+        clearTimeout(disconnectTimers.get(oldId));
+        disconnectTimers.delete(oldId);
+        onlineUsers.delete(oldId);
+        break;
+      }
+    }
+
     socket.join(room);
     socket.username = username;
     socket.room = room;
     onlineUsers.set(socket.id, { username, room });
 
-    socket.broadcast.to(room).emit("user_join", username);
+    persistentUser[`${username}_{room}`] = true;
+
+    // Notify others
+    if (!wasAlreadyRoom) {
+      socket.broadcast.to(room).emit("user_join", username);
+    }
+
     console.log(`{username} joined room: ${room}`);
 
     // Load last 20 messages
-    const messages = await Message.find({ roomId: room })
-      .sort({ _id: -1 })
-      .limit(20)
-      .populate("media");
 
-    socket.emit("loadMessages", messages.reverse());
+    try {
+      const messages = await Message.find({ roomId: room })
+        .sort({ _id: -1 })
+        .limit(20)
+        .populate("media");
+      socket.emit("loadMessages", messages.reverse());
+    } catch (err) {
+      console.error("Error loading messages:", err);
+      socket.emit("loadMessages", []);
+    }
 
     // Notify everyone of current online users
     updateOnlineUsers(io, room);
@@ -61,31 +86,45 @@ async function handleJoinRoom(socket, io, { username, room }) {
   }
 }
 
-function handleTyping(socket, { username, typing }) {
+function handleTyping(socket, { username, typing } = {}) {
   const user = onlineUsers.get(socket.id);
-  if (user) socket.to(user.room).emit("typing_status", { username, typing });
+  if (user && typeof typing === "boolean") {
+    socket.to(user.room).emit("typing_status", { username, typing });
+  }
 }
 
-async function handleChat(socket, io, msg) {
+async function handleChat(socket, io, msg = {}) {
   const user = onlineUsers.get(socket.id);
   if (!user || user.room !== msg.room) return;
 
-  try {
-    const mediaIds = await uploadMedia(msg.media, user);
+  // Validate message
+  const text = typeof msg.message === "string" ? msg.message.trim() : "";
+  const media = msg.media;
 
-    const newMessage = await Message.create({
+  if (!text && !media) {
+    return socket.emit("chat-error", { message: "Empty message." });
+  }
+
+  try {
+    const mediaIds = await uploadMedia(media, user);
+
+    const saved = await Message.create({
       username: msg.username,
       roomId: msg.room,
-      message: msg.message || "",
+      message: text,
       timestamp: msg.timestamp,
       media: mediaIds,
     });
     // console.log("messsssageeee::::");
 
     const mediaDocs = await Media.find({ _id: { $in: mediaIds } });
+
     io.to(msg.room).emit("chat message", {
-      ...msg,
-      _id: newMessage._id,
+      username: msg.username,
+      room: msg.room,
+      message: text,
+      timestamp: msg.timestamp,
+      _id: saved._id,
       media: mediaDocs.map((m) => ({ url: m.url, type: m.type })),
     });
   } catch (err) {
@@ -96,7 +135,10 @@ async function handleChat(socket, io, msg) {
 
 async function uploadMedia(media, user) {
   if (!media || typeof media !== "object") return [];
+
   const { base64, type } = media;
+  if (!base64 || !type) return [];
+
   const match = base64.match(/^data:(.+);base64,(.+)$/);
   if (!match) return [];
 
@@ -118,9 +160,9 @@ async function uploadMedia(media, user) {
   return [];
 }
 
-async function handleDelete(socket, io, { _id }) {
+async function handleDelete(socket, io, { _id } = {}) {
   const user = onlineUsers.get(socket.id);
-  if (!user) return;
+  if (!user || !_id) return;
 
   try {
     const message = await Message.findById(_id);
@@ -144,10 +186,14 @@ function handleDisconnect(socket, io) {
   const user = onlineUsers.get(socket.id);
   if (!user) return;
 
-  socket.broadcast.to(user.room).emit("user_left", user.username);
+  const timer = setTimeout(() => {
+    io.to(user.room).emit("user_left", user.username);
+    const isStillConnected = updateOnlineUsers(io, user.room);
+    console.log(`${user.username} left room: ${user.room}`);
+    disconnectTimers.delete(socket.id);
+  }, 3000);
   onlineUsers.delete(socket.id);
-  updateOnlineUsers(io, user.room);
-  console.log(`${user.username} disconnected from ${user.room}`);
+  disconnectTimers.set(socket.id, timer);
 }
 
 function updateOnlineUsers(io, room) {
