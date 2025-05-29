@@ -14,6 +14,7 @@ cloudinary.config({
 // In-memory stores
 const onlineUsers = new Map(); //  socketId -> { username, room }
 const disconnectTimers = new Map(); // socketId → timeoutId
+const messages = new Map();
 
 const persistentUser = {};
 
@@ -32,6 +33,10 @@ function initializeSocket(server) {
     socket.once("joinRoom", (data) => handleJoinRoom(socket, io, data));
     socket.on("typing", (data) => handleTyping(socket, data));
     socket.on("chat message", (msg) => handleChat(socket, io, msg));
+    socket.on("react-message", (data) => {
+      // console.log("hitting react message:");
+      handleReactMessage(socket, io, data);
+    });
     socket.on("delete-message", (data) => handleDelete(socket, io, data));
     socket.on("disconnect", () => handleDisconnect(socket, io));
   });
@@ -39,7 +44,8 @@ function initializeSocket(server) {
 
 async function handleJoinRoom(socket, io, { username, room } = {}) {
   try {
-    const wasAlreadyRoom = persistentUser[`${username}_{room}`];
+    const userKey = `${username}_${room}`;
+    const wasAlreadyRoom = persistentUser[userKey];
 
     // Cancel any pending “left” event for this user
     for (const [oldId, user] of onlineUsers.entries()) {
@@ -56,7 +62,7 @@ async function handleJoinRoom(socket, io, { username, room } = {}) {
     socket.room = room;
     onlineUsers.set(socket.id, { username, room });
 
-    persistentUser[`${username}_{room}`] = true;
+    persistentUser[userKey] = true;
 
     // Notify others
     if (!wasAlreadyRoom) {
@@ -120,11 +126,11 @@ async function handleChat(socket, io, msg = {}) {
     const mediaDocs = await Media.find({ _id: { $in: mediaIds } });
 
     io.to(msg.room).emit("chat message", {
+      _id: saved._id,
       username: msg.username,
       room: msg.room,
       message: text,
       timestamp: msg.timestamp,
-      _id: saved._id,
       media: mediaDocs.map((m) => ({ url: m.url, type: m.type })),
     });
   } catch (err) {
@@ -160,6 +166,52 @@ async function uploadMedia(media, user) {
   return [];
 }
 
+async function handleReactMessage(socket, io, { messageId, emoji, username }) {
+  try {
+    // 1. Toggle reaction atomically
+    const hasReacted = await Message.exists({
+      _id: messageId,
+      reactions: { $elemMatch: { emoji, reactedBy: username } },
+    });
+
+    if (hasReacted) {
+      await Message.updateOne(
+        { _id: messageId },
+        { $pull: { reactions: { emoji, reactedBy: username } } }
+      );
+    } else {
+      await Message.updateOne(
+        { _id: messageId },
+        { $push: { reactions: { emoji, reactedBy: username } } }
+      );
+    }
+
+    // 2. Fetch updated reactions array
+    const { reactions = [], roomId } = await Message.findById(
+      messageId,
+      "reactions roomId"
+    ).lean();
+
+    // 3. Compute counts per emoji and whether this user has reacted
+    const counts = reactions.reduce((acc, { emoji, reactedBy }) => {
+      acc[emoji] = (acc[emoji] || 0) + 1;
+      return acc;
+    }, {});
+    const userReactions = new Set(
+      reactions.filter((r) => r.reactedBy === username).map((r) => r.emoji)
+    );
+
+    // 4. Broadcast: for each client we send the same data, they'll decide highlight
+    io.to(roomId).emit("react-message", {
+      messageId,
+      counts, // { "👍": 3, "😂": 1, … }
+      userReactions: Array.from(userReactions), // e.g. ["👍"]
+    });
+  } catch (err) {
+    console.error("Error toggling reaction:", err);
+  }
+}
+
 async function handleDelete(socket, io, { _id } = {}) {
   const user = onlineUsers.get(socket.id);
   if (!user || !_id) return;
@@ -183,17 +235,25 @@ async function handleDelete(socket, io, { _id } = {}) {
 }
 
 function handleDisconnect(socket, io) {
-  const user = onlineUsers.get(socket.id);
-  if (!user) return;
+  const currentUser = onlineUsers.get(socket.id);
+  if (currentUser) {
+    const timer = setTimeout(() => {
+      // console.log("currentUser:", currentUser);
+      const stillOnline = [...onlineUsers.values()].some(
+        (user) =>
+          user.username === currentUser.username &&
+          user.room === currentUser.room
+      );
+      if (!stillOnline) {
+        io.to(currentUser.room).emit("user_left", currentUser.username);
+        delete persistentUser[`${currentUser.username}_{currentUser.room}`];
+      }
 
-  const timer = setTimeout(() => {
-    io.to(user.room).emit("user_left", user.username);
-    const isStillConnected = updateOnlineUsers(io, user.room);
-    console.log(`${user.username} left room: ${user.room}`);
-    disconnectTimers.delete(socket.id);
-  }, 3000);
-  onlineUsers.delete(socket.id);
-  disconnectTimers.set(socket.id, timer);
+      disconnectTimers.delete(socket.id);
+    }, 3000);
+    onlineUsers.delete(socket.id);
+    disconnectTimers.set(socket.id, timer);
+  }
 }
 
 function updateOnlineUsers(io, room) {

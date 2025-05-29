@@ -1,38 +1,37 @@
+// Import emoji picker
 import { createPopup } from "https://cdn.skypack.dev/@picmo/popup-picker";
 
+// Socket connection
 const socket = io();
 
+// Get user info
 const username = localStorage.getItem("username");
 const room = localStorage.getItem("room");
 
+// DOM elements
 const toggleThemeBtn = document.getElementById("toggle-theme-btn");
 const form = document.getElementById("form");
 const input = document.getElementById("input");
 const messages = document.getElementById("messages");
-const btn2 = document.getElementById("btn2");
+const logoutBtn = document.getElementById("btn2");
 const triggerButton = document.querySelector("#emoji-btn");
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
 
 // Theme toggle
 if (toggleThemeBtn) {
-  document.body.classList.toggle(
-    "dark-mode",
-    localStorage.getItem("theme") === "dark"
-  );
-  toggleThemeBtn.textContent =
-    localStorage.getItem("theme") === "dark" ? "☀️" : "🌙";
+  const savedTheme = localStorage.getItem("theme") === "dark";
+  document.body.classList.toggle("dark-mode", savedTheme);
+  toggleThemeBtn.textContent = savedTheme ? "☀️" : "🌙";
+
   toggleThemeBtn.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-    const theme = document.body.classList.contains("dark-mode")
-      ? "dark"
-      : "light";
-    localStorage.setItem("theme", theme);
-    toggleThemeBtn.textContent = theme === "dark" ? "☀️" : "🌙";
+    const isDark = document.body.classList.toggle("dark-mode");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+    toggleThemeBtn.textContent = isDark ? "☀️" : "🌙";
   });
 }
 
-// Display user info
+// Join room
 if (username && room) {
   document.querySelector(
     ".container2"
@@ -41,7 +40,7 @@ if (username && room) {
   initNotificationHandlers();
 }
 
-// Emoji picker
+// Emoji picker for input
 const picker = createPopup(
   { hideOnEmojiSelect: false },
   {
@@ -55,18 +54,22 @@ triggerButton.addEventListener("click", (e) => {
   e.preventDefault();
   picker.toggle();
 });
+
 picker.addEventListener("emoji:select", (e) => insertAtCursor(input, e.emoji));
 
+// File upload
 let base64Media = null;
 let mediaType = null;
+
 uploadBtn.addEventListener("click", () => fileInput.click());
+
 fileInput.addEventListener("change", () => {
-  const file = fileInput.files[0]; // Get the selected file
+  const file = fileInput.files[0];
   if (file) {
     mediaType = file.type.startsWith("image") ? "image" : "video";
     const reader = new FileReader();
-    reader.onload = () => (base64Media = reader.result); // read base64 encoded data
-    reader.readAsDataURL(file); // convert file to base64 string
+    reader.onload = () => (base64Media = reader.result);
+    reader.readAsDataURL(file);
   }
 });
 
@@ -81,6 +84,7 @@ form.addEventListener("submit", (e) => {
     minute: "2-digit",
     hour12: true,
   });
+
   const payload = { username, room, timestamp };
   if (message) payload.message = message;
   if (base64Media) payload.media = { base64: base64Media, type: mediaType };
@@ -93,24 +97,34 @@ form.addEventListener("submit", (e) => {
   mediaType = null;
 });
 
-btn2.addEventListener("click", () => {
+// Logout
+logoutBtn.addEventListener("click", () => {
   localStorage.removeItem("username");
   localStorage.removeItem("room");
   window.location.href = "/";
 });
 
+// Typing indicator
+input.addEventListener("focus", () =>
+  socket.emit("typing", { username, typing: true })
+);
+input.addEventListener("blur", () =>
+  socket.emit("typing", { username, typing: false })
+);
+
+socket.on("typing_status", ({ username: typingUser, typing }) => {
+  const indicator = document.querySelector(".indicator");
+  indicator.textContent =
+    typing && typingUser !== username ? `${typingUser} is typing...` : "";
+});
+
 // Notifications
 function initNotificationHandlers() {
-  socket.on("user_join", (u) => {
-    socket.off("user_join");
-    socket.off("user_left");
-    console.log("join event received");
-    showNotification(`${u} has joined the chat`);
-  });
+  socket.on("user_join", (u) => showNotification(`${u} has joined the chat`));
   socket.on("user_left", (u) => showNotification(`${u} has left the chat`));
 }
 
-// Online users
+// Online users list
 socket.on("userOnline", ({ onlineUsers }) => {
   const list = document.querySelector(".online-users-list");
   list.innerHTML = "";
@@ -123,26 +137,36 @@ socket.on("userOnline", ({ onlineUsers }) => {
   });
 });
 
-// Typing indicator
-input.addEventListener("focus", () =>
-  socket.emit("typing", { username, typing: true })
-);
-input.addEventListener("blur", () =>
-  socket.emit("typing", { username, typing: false })
-);
-socket.on("typing_status", ({ username: typingUser, typing }) => {
-  const indicator = document.querySelector(".indicator");
-  indicator.textContent =
-    typing && typingUser !== username ? `${typingUser} is typing...` : "";
+// Handle message reactions
+socket.on("react-message", ({ messageId, reactions }) => {
+  const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
+  if (!messageDiv) return;
+
+  const container = messageDiv.querySelector(".reaction-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  reactions.forEach((r) => {
+    const span = document.createElement("span");
+    span.className = "reaction";
+    span.textContent = r.emoji;
+    span.title = `Reacted by ${r.reactedBy}`;
+    // if (r.reactedBy === username) {
+    //   span.style.border = "2px solid blue";
+    // }
+    container.appendChild(span);
+  });
+});
+
+// Message deleted
+socket.on("message-deleted", ({ _id }) => {
+  const msg = document.querySelector(`[data-message-id="${_id}"]`);
+  if (msg) msg.remove();
 });
 
 // Incoming messages
 socket.on("chat message", appendMessage);
 socket.on("loadMessages", (msgs) => msgs.forEach(appendMessage));
-socket.on("message-deleted", ({ _id }) => {
-  const msg = document.querySelector(`[data-id="${_id}"]`);
-  if (msg) msg.remove();
-});
 
 function appendMessage({
   username: user,
@@ -150,21 +174,116 @@ function appendMessage({
   timestamp,
   _id,
   media = [],
+  reactions = [],
 }) {
   const currentUser = localStorage.getItem("username");
   const item = document.createElement("div");
   const msg = document.createElement("p");
   const time = document.createElement("span");
-  item.setAttribute("data-id", _id);
 
-  let text;
-  if (message) {
-    text = message;
+  item.className = "message-div";
+  item.setAttribute("data-id", _id);
+  item.dataset.messageId = _id;
+  item.style.position = "relative";
+  item.style.cssText = `
+    background-color: rgb(194 194 194);
+    padding: 12px;
+    margin-top: 2px;
+    border-radius: 10px;
+    width: 40%;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
+  `;
+  item.style.marginLeft = user === currentUser ? "585px" : "3px";
+
+  msg.innerHTML = `<strong>${user}</strong>${message ? `: ${message}` : ""}`;
+  time.textContent = timestamp;
+  msg.style.margin = "-4px 0 -4px -1px";
+  time.style.fontSize = "11px";
+
+  const reactionBar = document.createElement("div");
+  reactionBar.className = "reaction-bar";
+  const emojis = ["❤️", "😂", "😮", "😢", "👍"];
+  emojis.forEach((emoji) => {
+    const btn = document.createElement("button");
+    btn.className = "reaction-btn";
+    btn.textContent = emoji;
+    btn.addEventListener("click", () => {
+      const hasReacted = reactions.some(
+        (r) => r.emoji === emoji && r.reactedBy === currentUser
+      );
+      socket.emit(hasReacted ? "remove-reaction" : "react-message", {
+        messageId: _id,
+        emoji,
+        username: currentUser,
+      });
+    });
+    reactionBar.appendChild(btn);
+  });
+
+  const moreBtn = document.createElement("button");
+  moreBtn.className = "reaction-btn";
+  moreBtn.textContent = "➕";
+  moreBtn.title = "More Emojis";
+
+  const reactPicker = createPopup(
+    { hideOnEmojiSelect: false, emojiSize: "16px" },
+    {
+      triggerElement: moreBtn,
+      referenceElement: item,
+      position: "bottom-end",
+    }
+  );
+
+  moreBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    reactPicker.toggle();
+  });
+
+  reactPicker.addEventListener("emoji:select", (e) => {
+    socket.emit("react-message", {
+      messageId: _id,
+      emoji: e.emoji,
+      username: currentUser,
+    });
+  });
+
+  reactionBar.appendChild(moreBtn);
+
+  const reactionContainer = document.createElement("div");
+  reactionContainer.className = "reaction-container";
+  reactions.forEach((r) => {
+    const span = document.createElement("span");
+    span.className = "reaction";
+    span.textContent = r.emoji;
+    reactionContainer.appendChild(span);
+  });
+
+  const menuIcon = document.createElement("span");
+  menuIcon.className = "menu-icon";
+  menuIcon.textContent = "⋮";
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "dropdown-menu";
+
+  if (user === currentUser) {
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", () =>
+      socket.emit("delete-message", { _id })
+    );
+    dropdown.appendChild(deleteBtn);
   }
 
-  msg.innerHTML = `<strong>${user}</strong>: ${message ? `: ${message}` : ""}`;
-  time.textContent = timestamp;
+  menuIcon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.style.display =
+      dropdown.style.display === "block" ? "none" : "block";
+  });
 
+  document.addEventListener("click", () => (dropdown.style.display = "none"));
+
+  item.appendChild(reactionBar);
+  item.appendChild(reactionContainer);
   media.forEach((file) => {
     if (file.type === "image" || file.url.startsWith("data:image")) {
       const img = document.createElement("img");
@@ -183,58 +302,18 @@ function appendMessage({
     }
   });
 
-  const menuIcon = document.createElement("span");
-  menuIcon.className = "menu-icon";
-  menuIcon.textContent = "⋮";
-
-  const dropdown = document.createElement("div");
-  dropdown.className = "dropdown-menu";
-  if (user === currentUser) {
-    const deleteBtn = document.createElement("button");
-    deleteBtn.textContent = "Delete";
-    deleteBtn.addEventListener("click", () =>
-      socket.emit("delete-message", { _id })
-    );
-    dropdown.appendChild(deleteBtn);
-  }
-
-  menuIcon.addEventListener("click", (e) => {
-    e.stopPropagation();
-    dropdown.style.display =
-      dropdown.style.display === "block" ? "none" : "block";
-  });
-
-  document.addEventListener("click", () => (dropdown.style.display = "none"));
-
-  item.className = "message-div";
-
-  item.style.cssText = `
-              background-color: rgb(194 194 194);
-            //   min-height: 1rem;
-              padding: 12px;
-              margin-left: -205px;
-              margin-top: 2px;
-              border-radius: 10px;
-              width: 40%;
-              box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
-            `;
-  item.style.marginLeft = user === currentUser ? "585px" : "3px";
-
-  msg.style.margin = "-4px 0 -4px -1px";
-  time.style.fontSize = "11px";
-
   item.appendChild(msg);
   item.appendChild(time);
   item.appendChild(menuIcon);
   item.appendChild(dropdown);
+
   messages.appendChild(item);
   messages.scrollTop = messages.scrollHeight;
 }
 
 function insertAtCursor(input, emoji) {
   const [start, end] = [input.selectionStart, input.selectionEnd];
-  const text = input.value;
-  input.value = text.slice(0, start) + emoji + text.slice(end);
+  input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
   input.selectionStart = input.selectionEnd = start + emoji.length;
   input.focus();
 }

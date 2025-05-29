@@ -1,26 +1,33 @@
 const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema({
-   username: {
+  username: {
     type: String,
-    required: true
-   },
-   roomId: {
+    required: true,
+  },
+  roomId: {
     type: Number,
-    required: true
-   },
-   message: {
+    required: true,
+  },
+  message: {
     type: String,
-   },
-   timestamp: {
+  },
+  timestamp: {
     type: String,
-    default: Date.now
-   },
-   media: [{
+    default: Date.now,
+  },
+  media: [
+    {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Media'
-   }],
-   
+      ref: "Media",
+    },
+  ],
+  reactions: [
+    {
+      emoji: String,
+      reactedBy: String,
+    },
+  ],
 });
 
 module.exports = mongoose.model("Message", messageSchema);
