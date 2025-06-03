@@ -138,24 +138,39 @@ socket.on("userOnline", ({ onlineUsers }) => {
 });
 
 // Handle message reactions
-socket.on("react-message", ({ messageId, reactions }) => {
+socket.on("reaction updated", ({ messageId, reactions, userReactions }) => {
+  const currentUser = localStorage.getItem("username");
   const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
   if (!messageDiv) return;
 
   const container = messageDiv.querySelector(".reaction-container");
   if (!container) return;
+
+  // Clear current reactions
   container.innerHTML = "";
 
-  reactions.forEach((r) => {
+  // Render updated reactions
+  for (const [emoji, users] of Object.entries(reactions)) {
     const span = document.createElement("span");
     span.className = "reaction";
-    span.textContent = r.emoji;
-    span.title = `Reacted by ${r.reactedBy}`;
-    // if (r.reactedBy === username) {
-    //   span.style.border = "2px solid blue";
-    // }
+    span.textContent = `${emoji} ${users.length}`;
+    span.title = `Reacted by: ${users.join(", ")}`;
+
+    if (users.includes(currentUser)) {
+      span.style.border = "1px solid blue";
+      span.style.cursor = "pointer";
+
+      span.addEventListener("click", () => {
+        socket.emit("react-message", {
+          messageId,
+          emoji,
+          username: currentUser,
+        });
+      });
+    }
+
     container.appendChild(span);
-  });
+  }
 });
 
 // Message deleted
@@ -167,6 +182,25 @@ socket.on("message-deleted", ({ _id }) => {
 // Incoming messages
 socket.on("chat message", appendMessage);
 socket.on("loadMessages", (msgs) => msgs.forEach(appendMessage));
+socket.on("message-delivered", ({ messageId, status }) => {
+  const statusEl = document.querySelector(
+    `.message-status[data-message-id="${messageId}"]`
+  );
+  if (statusEl) {
+    statusEl.textContent = "☑️"; // e.g., "Delivered"
+    statusEl.style.color = "green"; // optional: color for delivered
+  }
+});
+
+socket.on("message-seen", ({ messageId, status }) => {
+  const statusEl = document.querySelector(
+    `.message-status[data-message-id="${messageId}"]`
+  );
+  if (statusEl) {
+    statusEl.textContent = "✅"; // e.g., "Seen"
+    statusEl.style.color = "blue"; // optional: color for seen
+  }
+});
 
 function appendMessage({
   username: user,
@@ -182,7 +216,7 @@ function appendMessage({
   const time = document.createElement("span");
 
   item.className = "message-div";
-  item.setAttribute("data-id", _id);
+  // item.setAttribute("data-id", _id);
   item.dataset.messageId = _id;
   item.style.position = "relative";
   item.style.cssText = `
@@ -200,6 +234,7 @@ function appendMessage({
   msg.style.margin = "-4px 0 -4px -1px";
   time.style.fontSize = "11px";
 
+  // --- Emit toggle reaction when clicking emoji button ---
   const reactionBar = document.createElement("div");
   reactionBar.className = "reaction-bar";
   const emojis = ["❤️", "😂", "😮", "😢", "👍"];
@@ -208,10 +243,7 @@ function appendMessage({
     btn.className = "reaction-btn";
     btn.textContent = emoji;
     btn.addEventListener("click", () => {
-      const hasReacted = reactions.some(
-        (r) => r.emoji === emoji && r.reactedBy === currentUser
-      );
-      socket.emit(hasReacted ? "remove-reaction" : "react-message", {
+      socket.emit("react-message", {
         messageId: _id,
         emoji,
         username: currentUser,
@@ -220,6 +252,7 @@ function appendMessage({
     reactionBar.appendChild(btn);
   });
 
+  // --- Emoji Picker (More Emojis) ---
   const moreBtn = document.createElement("button");
   moreBtn.className = "reaction-btn";
   moreBtn.textContent = "➕";
@@ -249,6 +282,7 @@ function appendMessage({
 
   reactionBar.appendChild(moreBtn);
 
+  // --- Container to hold rendered reactions ---
   const reactionContainer = document.createElement("div");
   reactionContainer.className = "reaction-container";
   reactions.forEach((r) => {
@@ -302,10 +336,25 @@ function appendMessage({
     }
   });
 
+  socket.emit("message-seen", {
+    messageId: _id,
+    sender: msg.from,
+  });
+
   item.appendChild(msg);
   item.appendChild(time);
   item.appendChild(menuIcon);
   item.appendChild(dropdown);
+
+  const status = document.createElement("span");
+  status.className = "message-status";
+  status.dataset.messageId = _id;
+  status.style.fontSize = "10px";
+  status.style.color = "gray";
+  status.style.marginLeft = "5px";
+  status.textContent = "🕓"; // default status when message is appended
+
+  item.appendChild(status);
 
   messages.appendChild(item);
   messages.scrollTop = messages.scrollHeight;

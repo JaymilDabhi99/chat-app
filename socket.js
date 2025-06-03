@@ -14,7 +14,7 @@ cloudinary.config({
 // In-memory stores
 const onlineUsers = new Map(); //  socketId -> { username, room }
 const disconnectTimers = new Map(); // socketId → timeoutId
-const messages = new Map();
+const messageReactions = {};
 
 const persistentUser = {};
 
@@ -29,14 +29,11 @@ function initializeSocket(server) {
 
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.id}`);
-
     socket.once("joinRoom", (data) => handleJoinRoom(socket, io, data));
     socket.on("typing", (data) => handleTyping(socket, data));
     socket.on("chat message", (msg) => handleChat(socket, io, msg));
-    socket.on("react-message", (data) => {
-      // console.log("hitting react message:");
-      handleReactMessage(socket, io, data);
-    });
+    socket.on("react-message", (data) => handleReactMessage(socket, io, data));
+    socket.on("message-seen", (data) => handleMessageSeen(socket, data));
     socket.on("delete-message", (data) => handleDelete(socket, io, data));
     socket.on("disconnect", () => handleDisconnect(socket, io));
   });
@@ -133,9 +130,35 @@ async function handleChat(socket, io, msg = {}) {
       timestamp: msg.timestamp,
       media: mediaDocs.map((m) => ({ url: m.url, type: m.type })),
     });
+
+    for (const [id, userInfo] of onlineUsers.entries()) {
+      if (userInfo.username === msg.username && userInfo.room === msg.room) {
+        io.to(id).emit("message-delivered", {
+          messageId: saved._id,
+          status: "Delivered",
+        });
+        break;
+      }
+    }
   } catch (err) {
     console.error("Error handling chat message:", err);
     socket.emit("chat-error", { message: "Failed to send message" });
+  }
+}
+
+async function handleMessageSeen(socket, { messageId, sender }) {
+  const user = onlineUsers.get(socket.id);
+  if (!user || !messageId || !sender) return;
+
+  // Find the sender's socketId and notify them
+  for (const [id, info] of onlineUsers.entries()) {
+    if (info.username === sender && info.room === user.room) {
+      socket.to(id).emit("message-seen", {
+        messageId,
+        status: "Seen",
+      });
+      break;
+    }
   }
 }
 
@@ -168,47 +191,49 @@ async function uploadMedia(media, user) {
 
 async function handleReactMessage(socket, io, { messageId, emoji, username }) {
   try {
-    // 1. Toggle reaction atomically
-    const hasReacted = await Message.exists({
-      _id: messageId,
-      reactions: { $elemMatch: { emoji, reactedBy: username } },
-    });
-
-    if (hasReacted) {
-      await Message.updateOne(
-        { _id: messageId },
-        { $pull: { reactions: { emoji, reactedBy: username } } }
-      );
-    } else {
-      await Message.updateOne(
-        { _id: messageId },
-        { $push: { reactions: { emoji, reactedBy: username } } }
-      );
+    // Initialize if not exists
+    if (!messageReactions[messageId]) {
+      messageReactions[messageId] = {};
+    }
+    if (!messageReactions[messageId][emoji]) {
+      messageReactions[messageId][emoji] = [];
     }
 
-    // 2. Fetch updated reactions array
-    const { reactions = [], roomId } = await Message.findById(
-      messageId,
-      "reactions roomId"
-    ).lean();
+    const userIndex = messageReactions[messageId][emoji].indexOf(username);
 
-    // 3. Compute counts per emoji and whether this user has reacted
-    const counts = reactions.reduce((acc, { emoji, reactedBy }) => {
-      acc[emoji] = (acc[emoji] || 0) + 1;
-      return acc;
-    }, {});
-    const userReactions = new Set(
-      reactions.filter((r) => r.reactedBy === username).map((r) => r.emoji)
-    );
+    // Toggle logic: add or remove
+    if (userIndex === -1) {
+      messageReactions[messageId][emoji].push(username);
+    } else {
+      messageReactions[messageId][emoji].splice(userIndex, 1);
+      if (messageReactions[messageId][emoji].length === 0) {
+        delete messageReactions[messageId][emoji];
+      }
+    }
 
-    // 4. Broadcast: for each client we send the same data, they'll decide highlight
-    io.to(roomId).emit("react-message", {
+    // Persist to DB
+    const flattenedReactions = [];
+    for (const [emoji, users] of Object.entries(messageReactions[messageId])) {
+      for (const reactedBy of users) {
+        flattenedReactions.push({ emoji, reactedBy });
+      }
+    }
+
+    await Message.findByIdAndUpdate(messageId, {
+      reactions: flattenedReactions,
+    });
+
+    // Emit updated reaction
+    io.emit("reaction updated", {
       messageId,
-      counts, // { "👍": 3, "😂": 1, … }
-      userReactions: Array.from(userReactions), // e.g. ["👍"]
+      reactions: messageReactions[messageId],
+      userReactions: Object.keys(messageReactions[messageId]).filter((em) =>
+        messageReactions[messageId][em].includes(username)
+      ),
     });
   } catch (err) {
-    console.error("Error toggling reaction:", err);
+    console.error("Error in handleReactMessage:", err);
+    socket.emit("reaction-error", { message: "Failed to update reaction" });
   }
 }
 
