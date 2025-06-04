@@ -28,6 +28,8 @@ const messageSchema = new mongoose.Schema({
       reactedBy: String,
     },
   ],
+  deliveredTo: [String],
+  seenBy: [String],
 });
 
 module.exports = mongoose.model("Message", messageSchema);

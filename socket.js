@@ -117,6 +117,8 @@ async function handleChat(socket, io, msg = {}) {
       message: text,
       timestamp: msg.timestamp,
       media: mediaIds,
+      delivered: [msg.username],
+      seenBy: [],
     });
     // console.log("messsssageeee::::");
 
@@ -129,6 +131,8 @@ async function handleChat(socket, io, msg = {}) {
       message: text,
       timestamp: msg.timestamp,
       media: mediaDocs.map((m) => ({ url: m.url, type: m.type })),
+      delivered: saved.deliveredTo,
+      seenBy: saved.seenBy,
     });
 
     for (const [id, userInfo] of onlineUsers.entries()) {
@@ -149,6 +153,14 @@ async function handleChat(socket, io, msg = {}) {
 async function handleMessageSeen(socket, { messageId, sender }) {
   const user = onlineUsers.get(socket.id);
   if (!user || !messageId || !sender) return;
+
+  const message = await Message.findById(messageId);
+  if (!message) return;
+
+  if (!message.seenBy.includes(user.username)) {
+    message.seenBy.push(user.username);
+    await message.save();
+  }
 
   // Find the sender's socketId and notify them
   for (const [id, info] of onlineUsers.entries()) {

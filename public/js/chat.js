@@ -1,3 +1,19 @@
+// import { initThemeToggle } from "./theme.js";
+// import { initSocketHandlers } from "./socket.js";
+// import { initEmojiPicker } from "./emoji.js";
+// import { initMediaUpload } from "./media.js";
+// import { insertAtCursor } from "./utils.js";
+// import { appendMessage } from "./message.js";
+
+// document.addEventListener("DOMContentLoaded", () => {
+//   appendMessage();
+//   initThemeToggle();
+//   initEmojiPicker();
+//   initMediaUpload();
+//   initSocketHandlers();
+//   insertAtCursor();
+// });
+
 // Import emoji picker
 import { createPopup } from "https://cdn.skypack.dev/@picmo/popup-picker";
 
@@ -149,8 +165,11 @@ socket.on("reaction updated", ({ messageId, reactions, userReactions }) => {
   // Clear current reactions
   container.innerHTML = "";
 
-  // Render updated reactions
-  for (const [emoji, users] of Object.entries(reactions)) {
+  const allReactions = Object.entries(reactions);
+  const visibleReactions = allReactions.slice(0, 5);
+  const hiddenReactions = allReactions.slice(5);
+
+  visibleReactions.forEach(([emoji, users]) => {
     const span = document.createElement("span");
     span.className = "reaction";
     span.textContent = `${emoji} ${users.length}`;
@@ -168,9 +187,70 @@ socket.on("reaction updated", ({ messageId, reactions, userReactions }) => {
         });
       });
     }
-
     container.appendChild(span);
+  });
+
+  // Show "+X" more if reactions are hidden
+  if (hiddenReactions.length > 0) {
+    const moreBtn = document.createElement("span");
+    moreBtn.className = "reaction-more";
+    moreBtn.textContent = `+${hiddenReactions.length}`;
+    moreBtn.style.cursor = "pointer";
+    moreBtn.style.marginLeft = "6px";
+
+    // Tooltip dropdown or hover popup
+    const tooltip = document.createElement("div");
+    tooltip.className = "reaction-tooltip";
+    tooltip.style.display = "none";
+    tooltip.style.position = "absolute";
+    tooltip.style.background = "#f1f1f1";
+    tooltip.style.padding = "5px";
+    tooltip.style.borderRadius = "5px";
+    tooltip.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+    tooltip.style.zIndex = "10";
+
+    hiddenReactions.forEach(([emoji, users]) => {
+      const extraSpan = document.createElement("div");
+      extraSpan.className = "reaction";
+      extraSpan.textContent = `${emoji} ${users.length}`;
+      extraSpan.title = `Reacted by: ${users.join(", ")}`;
+      tooltip.appendChild(extraSpan);
+    });
+
+    moreBtn.addEventListener("mouseenter", () => {
+      tooltip.style.display = "block";
+      container.appendChild(tooltip);
+    });
+
+    moreBtn.addEventListener("mouseleave", () => {
+      tooltip.style.display = "none";
+    });
+
+    container.appendChild(moreBtn);
   }
+
+  // Render updated reactions
+  // for (const [emoji, users] of Object.entries(reactions)) {
+  //   const span = document.createElement("span");
+  //   span.className = "reaction";
+  //   span.textContent = `${emoji} ${users.length}`;
+  //   span.title = `Reacted by: ${users.join(", ")}`;
+
+  //   if (users.includes(currentUser)) {
+  //     span.style.border = "1px solid blue";
+  //     span.style.cursor = "pointer";
+
+  //     span.addEventListener("click", () => {
+  //       socket.emit("react-message", {
+  //         messageId,
+  //         emoji,
+  //         username: currentUser,
+  //       });
+  //     });
+  //   }
+
+  //   container.appendChild(span);
+  // }
 });
 
 // Message deleted
@@ -209,6 +289,8 @@ function appendMessage({
   _id,
   media = [],
   reactions = [],
+  deliveredTo = [],
+  seenBy = [],
 }) {
   const currentUser = localStorage.getItem("username");
   const item = document.createElement("div");
@@ -352,7 +434,14 @@ function appendMessage({
   status.style.fontSize = "10px";
   status.style.color = "gray";
   status.style.marginLeft = "5px";
-  status.textContent = "🕓"; // default status when message is appended
+
+  if (seenBy.includes(currentUser)) {
+    status.textContent = "✅";
+    status.style.color = "blue";
+  } else if (deliveredTo.includes(currentUser)) {
+    status.textContent = "☑️";
+    status.style.color = "green";
+  }
 
   item.appendChild(status);
 

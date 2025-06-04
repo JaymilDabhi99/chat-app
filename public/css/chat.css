@@ -180,6 +180,23 @@ h1 {
   gap: 5px;
 }
 
+.reaction-tooltip {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 6px;
+  margin-top: 4px;
+  display: none;
+  border-radius: 6px;
+  z-index: 100;
+  font-size: 14px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.reaction-container:hover .reaction-tooltip {
+  display: block; 
+}
+
 .reaction {
   background: #eee;
   border-radius: 12px;
